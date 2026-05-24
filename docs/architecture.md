@@ -1,6 +1,6 @@
 # Planned architecture
 
-This document describes the target architecture for `semantic-index`. The current implementation is intentionally minimal: only the base CLI exists, with `--help` and `version`.
+This document describes the target architecture for `semantic-index`. The current implementation is intentionally minimal: the base CLI supports `--help`, `version`, and a `build` skeleton that validates local input paths and discovers Markdown files without writing an index.
 
 ## Principles
 
@@ -15,21 +15,23 @@ This document describes the target architecture for `semantic-index`. The curren
 
 ### 1. Build index
 
-Tentative future command:
+Current skeleton command:
 
 ```bash
 semantic-index build ./notes --out .semantic-index
 ```
 
+The current command only validates the input path, discovers local `*.md` files, prints a summary, and does not write index files yet.
+
 Responsibilities:
 
 1. Validate that the input path exists and is local.
 2. Discover `*.md` files.
-3. Read each file as UTF-8.
+3. Read each file as UTF-8 in a later implementation step.
 4. Convert each document into Markdown chunks.
-5. Generate local embeddings with `fastembed`.
+5. Generate local embeddings with `fastembed` in a later implementation step.
 6. Normalize vectors for cosine similarity via dot product.
-7. Save:
+7. Save in a later implementation step:
    - `.semantic-index/docs.jsonl`: chunk text and metadata.
    - `.semantic-index/index.npz`: normalized `float32` embedding matrix.
 
@@ -48,8 +50,8 @@ Minimum metadata per chunk:
 
 Security notes:
 
-- Do not follow symlinks by default until an explicit policy is defined.
-- Do not write outside the `--out` directory provided by the user.
+- Do not follow symlinks by default.
+- The current build skeleton must not write index files. Future index writes must stay inside the `--out` directory provided by the user.
 - Do not include secrets in logs.
 - Treat `docs.jsonl` and `index.npz` as sensitive data because they are derived from private notes.
 
@@ -69,7 +71,7 @@ Tentative parameters:
 
 - `--max-chars 1800` as a simple default.
 - `--include "*.md"` to limit patterns.
-- `--exclude` to ignore directories such as `.git`, `.venv`, `.semantic-index`.
+- `--exclude` to ignore directories such as `.git`, `.venv`, `.semantic-index`. The current discovery skeleton already skips `.git`, `.venv`, `.semantic-index`, `.embeddings`, and `__pycache__` by default.
 
 ### 3. Search index
 

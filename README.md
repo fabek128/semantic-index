@@ -2,7 +2,7 @@
 
 `semantic-index` is a CLI-first tool for turning local Markdown notes into retrievable context for AI agents.
 
-Current status: **initial scaffold**. It does not build indexes or run semantic search yet; this first step only provides the project structure and a minimal CLI.
+Current status: **pre-alpha scaffold**. It can validate a local input path and discover Markdown files for a future index build, but it does not chunk documents, generate embeddings, write index files, or run semantic search yet.
 
 ## Goal
 
@@ -21,11 +21,13 @@ Included now:
 - Minimal commands:
   - `semantic-index --help`
   - `semantic-index version`
+  - `semantic-index build ./notes`
+- Safe Markdown file discovery for local files/directories.
 - Planned architecture documentation in [`docs/architecture.md`](docs/architecture.md).
 
 Not included yet:
 
-- Recursive Markdown reading.
+- Markdown content reading.
 - Real document chunking.
 - Embeddings with `fastembed`.
 - Search with `numpy`.
@@ -50,13 +52,17 @@ Then:
 ```bash
 semantic-index --help
 semantic-index version
+semantic-index build ./docs
 ```
+
+`build` currently discovers Markdown files and prints a summary only. It does not write `.semantic-index`, `docs.jsonl`, or `index.npz` yet.
 
 Alternative without installing the package:
 
 ```bash
 PYTHONPATH=src python -m semantic_index --help
 PYTHONPATH=src python -m semantic_index version
+PYTHONPATH=src python -m semantic_index build ./docs
 ```
 
 ## Testing
@@ -67,7 +73,7 @@ Run the unit test suite from the repository root:
 python -m unittest discover
 ```
 
-The current tests use only the Python standard library and cover the minimal CLI entrypoints.
+The current tests use only the Python standard library and cover the minimal CLI entrypoints plus safe Markdown discovery behavior.
 
 ## Project structure
 
@@ -80,9 +86,12 @@ semantic-index/
 │   └── semantic_index/
 │       ├── __init__.py
 │       ├── __main__.py
-│       └── cli.py
+│       ├── cli.py
+│       └── discovery.py
 ├── tests/
-│   └── test_cli.py
+│   ├── __init__.py
+│   ├── test_cli.py
+│   └── test_discovery.py
 ├── .gitignore
 ├── pyproject.toml
 └── README.md
@@ -92,7 +101,7 @@ semantic-index/
 
 The planned flow is:
 
-1. `build index`: discover Markdown files, split them into chunks, generate local embeddings, and save the index.
+1. `build index`: discover Markdown files, split them into chunks, generate local embeddings, and save the index. The current `build` command only performs safe discovery.
 2. `search index`: load `docs.jsonl` + `index.npz`, embed the query, and return the best chunks.
 3. Agent integration: expose results through the CLI in simple and stable formats, without a daemon or API.
 
@@ -107,7 +116,7 @@ See details in [`docs/architecture.md`](docs/architecture.md).
 
 ## Short roadmap
 
-1. Add a `build` command with basic path validation and `.md` discovery.
+1. Extend `build` beyond discovery into Markdown content loading.
 2. Implement simple Markdown chunking by headings and approximate size.
 3. Add `fastembed` + `numpy` for embeddings and exact in-memory search.
 4. Persist the index as `docs.jsonl` + `index.npz`.
