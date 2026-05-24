@@ -1,6 +1,6 @@
-# Planned architecture
+# Architecture
 
-This document describes the target architecture for `semantic-index`. The current implementation is intentionally minimal: only the base CLI exists, with `--help` and `version`.
+This document describes the architecture for `semantic-index`. The build command with Markdown file discovery is implemented. Index building and semantic search are planned.
 
 ## Principles
 
@@ -11,21 +11,25 @@ This document describes the target architecture for `semantic-index`. The curren
 - Minimal dependencies: add `fastembed` and `numpy` only when embeddings/search are implemented.
 - Safe formats: avoid `pickle`; prefer `jsonl` and `npz`.
 
-## Planned components
+## Components
 
-### 1. Build index
-
-Tentative future command:
+### 1. Build command — File discovery (implemented)
 
 ```bash
 semantic-index build ./notes --out .semantic-index
 ```
 
-Responsibilities:
+Current responsibilities:
 
 1. Validate that the input path exists and is local.
-2. Discover `*.md` files.
-3. Read each file as UTF-8.
+2. Discover `*.md` files (single file or recursive directory walk).
+3. Skip common generated/hidden directories (`.git`, `.venv`, `.semantic-index`, `.embeddings`, `__pycache__`, `node_modules`).
+4. Do not follow symlinks.
+5. Print a deterministic summary of discovered files.
+
+Future responsibilities (not implemented):
+
+1. Read each file as UTF-8.
 4. Convert each document into Markdown chunks.
 5. Generate local embeddings with `fastembed`.
 6. Normalize vectors for cosine similarity via dot product.
