@@ -57,23 +57,29 @@ Security notes:
 - Do not include secrets in logs.
 - Treat `docs.jsonl` and `index.npz` as sensitive data because they are derived from private notes.
 
-### 2. Markdown chunking
+### 2. Markdown chunking (implemented)
 
 Goal: produce context units that are small enough for retrieval and large enough to preserve meaning.
 
-Initial future strategy:
+Current strategy:
 
 1. Split by Markdown headings (`#`, `##`, `###`, etc.).
 2. Keep metadata for the active heading.
 3. If a section is long, split it by paragraphs up to an approximate character limit.
-4. Avoid empty chunks.
-5. Preserve path, title, heading, and chunk index.
+4. If a paragraph is still too long, split by individual lines.
+5. Avoid empty chunks.
+6. Preserve path, title, heading, chunk index, and deterministic chunk id.
 
-Tentative parameters:
+Parameters:
 
-- `--max-chars 1800` as a simple default.
-- `--include "*.md"` to limit patterns.
-- `--exclude` to ignore directories such as `.git`, `.venv`, `.semantic-index`.
+- `max_chars=1800` as a simple default.
+- The chunker is a library module (`semantic_index.chunker`).
+- It is not yet called by the build command; that integration happens in `v0.3.0-pre-alpha`.
+
+Deterministic chunk ids:
+
+- Each file gets a short `md5` hash based on its resolved path.
+- Chunk ids are `{file_hash}_{chunk_index}`, making them stable for the same file path and chunk order.
 
 ### 3. Search index
 

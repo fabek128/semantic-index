@@ -26,7 +26,6 @@ Included now:
 
 Not included yet:
 
-- Recursive Markdown chunking.
 - Embeddings with `fastembed`.
 - Search with `numpy`.
 - `docs.jsonl` / `index.npz` persistence.
@@ -78,6 +77,30 @@ The build command validates paths, skips common generated directories (`.git`,
 `.venv`, `.semantic-index`, `.embeddings`, `__pycache__`), ignores symlinks,
 and prints a deterministic summary of discovered files.
 
+### Chunking (library module)
+
+The `semantic_index.chunker` module provides Markdown chunking for future
+indexing:
+
+```python
+from pathlib import Path
+from semantic_index.chunker import chunk_markdown
+
+chunks = chunk_markdown(Path("notes/project.md"), max_chars=1800)
+for chunk in chunks:
+    print(chunk["heading"], chunk["text"][:80])
+```
+
+Each chunk includes:
+- `id` — deterministic hash based on the file path and chunk index
+- `path` — source file path
+- `title` — first `#` heading or filename stem as fallback
+- `heading` — current ATX heading
+- `chunk_index` — sequential index within the file
+- `text` — chunk content
+
+The chunker is a pure standard-library function with no runtime dependencies.
+
 ## Testing
 
 Run the unit test suite from the repository root:
@@ -100,10 +123,12 @@ semantic-index/
 │       ├── __init__.py
 │       ├── __main__.py
 │       ├── cli.py
-│       └── discovery.py
+│       ├── discovery.py
+│       └── chunker.py
 ├── tests/
 │   ├── test_cli.py
-│   └── test_discovery.py
+│   ├── test_discovery.py
+│   └── test_chunker.py
 ├── .gitignore
 ├── pyproject.toml
 └── README.md
