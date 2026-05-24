@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the architecture for `semantic-index`. The build command with Markdown file discovery is implemented. Index building and semantic search are planned.
+This document describes the architecture for `semantic-index`. The build command (discovery, chunking, embedding, persistence) is implemented. Semantic search is planned.
 
 ## Principles
 
@@ -13,7 +13,7 @@ This document describes the architecture for `semantic-index`. The build command
 
 ## Components
 
-### 1. Build command — File discovery (implemented)
+### 1. Build command — Full pipeline (implemented)
 
 ```bash
 semantic-index build ./notes --out .semantic-index
@@ -25,15 +25,11 @@ Current responsibilities:
 2. Discover `*.md` files (single file or recursive directory walk).
 3. Skip common generated/hidden directories (`.git`, `.venv`, `.semantic-index`, `.embeddings`, `__pycache__`, `node_modules`).
 4. Do not follow symlinks.
-5. Print a deterministic summary of discovered files.
-
-Future responsibilities (not implemented):
-
-1. Read each file as UTF-8.
-4. Convert each document into Markdown chunks.
-5. Generate local embeddings with `fastembed`.
-6. Normalize vectors for cosine similarity via dot product.
-7. Save:
+5. Read each file as UTF-8.
+6. Convert each document into Markdown chunks.
+7. Generate local embeddings with `fastembed`.
+8. Normalize vectors for cosine similarity via dot product.
+9. Save:
    - `.semantic-index/docs.jsonl`: chunk text and metadata.
    - `.semantic-index/index.npz`: normalized `float32` embedding matrix.
 
@@ -57,7 +53,7 @@ Security notes:
 - Do not include secrets in logs.
 - Treat `docs.jsonl` and `index.npz` as sensitive data because they are derived from private notes.
 
-### 2. Markdown chunking (implemented)
+### 2. Markdown chunking (implemented — used by the build command)
 
 Goal: produce context units that are small enough for retrieval and large enough to preserve meaning.
 
@@ -74,7 +70,7 @@ Parameters:
 
 - `max_chars=1800` as a simple default.
 - The chunker is a library module (`semantic_index.chunker`).
-- It is not yet called by the build command; that integration happens in `v0.3.0-pre-alpha`.
+- It is called by the build command to produce chunks before embedding.
 
 Deterministic chunk ids:
 

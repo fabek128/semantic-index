@@ -25,12 +25,13 @@ Implemented:
   excluded dirs, symlink safety, and summary output.
 - Markdown chunking by ATX headings with configurable size, metadata-rich
   output, and deterministic chunk ids.
+- Embedding generation with `fastembed` and persistence as
+  `docs.jsonl` + `index.npz`.
 
 Not implemented yet:
 
-- Embedding generation.
 - Search.
-- Index persistence.
+- Index query command.
 
 ## Constraints
 
