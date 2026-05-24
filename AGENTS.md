@@ -27,11 +27,14 @@ Implemented:
   output, and deterministic chunk ids.
 - Embedding generation with `fastembed` and persistence as
   `docs.jsonl` + `index.npz`.
+- `semantic-index search` — local semantic search with ranked results
+  and agent-friendly output formats (`text`, `json`, `jsonl`).
 
 Not implemented yet:
 
-- Search.
-- Index query command.
+- Hybrid lexical/BM25 search.
+- Index merge / incremental indexing.
+- FAISS or ANN acceleration.
 
 ## Constraints
 

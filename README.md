@@ -2,7 +2,7 @@
 
 `semantic-index` is a CLI-first tool for turning local Markdown notes into retrievable context for AI agents.
 
-Current status: **pre-alpha**. The build command can discover Markdown files, split them into chunks, generate local embeddings, and persist the index as `docs.jsonl` + `index.npz`.
+Current status: **pre-alpha**. The CLI supports index building and semantic search.
 
 ## Goal
 
@@ -22,12 +22,16 @@ Included now:
   - `semantic-index --help`
   - `semantic-index version`
   - `semantic-index build <path>` — discover, chunk, embed, and persist index
+  - `semantic-index search <query>` — search an existing index with ranked results
+- Output formats: `text` (human-readable), `json`, `jsonl` (agent-friendly)
 - Architecture documentation in [`docs/architecture.md`](docs/architecture.md).
 - Default embedding model: `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (384 dims, multilingual).
 
 Not included yet:
 
-- Search with `numpy`.
+- Hybrid lexical/BM25 search.
+- Index merge / incremental indexing.
+- FAISS or ANN acceleration.
 - APIs, web servers, databases, or external services.
 
 ## Requirements
@@ -57,6 +61,19 @@ PYTHONPATH=src python -m semantic_index --help
 PYTHONPATH=src python -m semantic_index version
 PYTHONPATH=src python -m semantic_index build ./notes
 PYTHONPATH=src python -m semantic_index build ./docs --out ./my-index
+```
+
+### Search command examples
+
+```bash
+# Search with default text output
+semantic-index search "query text" --index .semantic-index --top-k 5
+
+# Agent-friendly JSON output
+semantic-index search "query text" --index .semantic-index --format json
+
+# JSONL output (one object per line)
+semantic-index search "query text" --index .semantic-index --format jsonl
 ```
 
 ### Build command examples
