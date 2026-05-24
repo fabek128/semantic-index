@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Local environments and secrets
+.venv/
+.env
+.env.*
+
+# Future local indexes may contain sensitive note content/embeddings
+.semantic-index/
+.embeddings/
+docs.jsonl
+index.npz

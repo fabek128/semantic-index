@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "semantic-index"
+version = "0.1.0"
+description = "CLI-first local semantic search for Markdown notes."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+  { name = "Fabian" }
+]
+dependencies = []
+keywords = ["semantic-search", "markdown", "cli", "local-first", "ai-agents"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Topic :: Text Processing :: Indexing",
+]
+
+[project.scripts]
+semantic-index = "semantic_index.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
