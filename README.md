@@ -59,6 +59,16 @@ PYTHONPATH=src python -m semantic_index --help
 PYTHONPATH=src python -m semantic_index version
 ```
 
+## Testing
+
+Run the unit test suite from the repository root:
+
+```bash
+python -m unittest discover
+```
+
+The current tests use only the Python standard library and cover the minimal CLI entrypoints.
+
 ## Project structure
 
 ```text
@@ -71,6 +81,8 @@ semantic-index/
 │       ├── __init__.py
 │       ├── __main__.py
 │       └── cli.py
+├── tests/
+│   └── test_cli.py
 ├── .gitignore
 ├── pyproject.toml
 └── README.md

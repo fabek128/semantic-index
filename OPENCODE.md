@@ -1,0 +1,15 @@
+# OpenCode instructions
+
+Follow the shared repository instructions in `AGENTS.md`.
+
+OpenCode-specific notes:
+
+- Prefer small, direct patches.
+- Avoid new dependencies unless explicitly requested.
+- Do not read or expose `.env` values unless explicitly required.
+- Keep documentation in English.
+- Run the basic CLI checks after modifying code.
+- For GitHub project management, issues, bugs, pull requests, and repository metadata, always use the GitHub CLI (`gh`).
+- Use the simple GitHub workflow for project work: GitHub issue -> branch -> PR -> merge. Use `gh` for the GitHub operations.
+- Every process, issue, bug, feature, and behavior change must be documented in detail, and every implementation task or bug fix must include unit tests.
+- Current project workflow is pre-alpha: every GitHub issue/bug must be created in `fabek128/semantic-index`, assigned to the GitHub Project `semantic-index Roadmap` (`https://github.com/users/fabek128/projects/2`), assigned to a roadmap milestone, documented in detail, and covered by unit tests when implementation or bug-fix work is involved. When an agent starts work on an issue, it must assign the issue to the active GitHub user, move the Project status to `In Progress`, and add issue comments for blockers, risks, decisions, or useful extra context.
