@@ -23,10 +23,11 @@ Implemented:
 - `semantic-index version`.
 - `semantic-index build` — Markdown file discovery with path validation,
   excluded dirs, symlink safety, and summary output.
+- Markdown chunking by ATX headings with configurable size, metadata-rich
+  output, and deterministic chunk ids.
 
 Not implemented yet:
 
-- Markdown chunking.
 - Embedding generation.
 - Search.
 - Index persistence.
