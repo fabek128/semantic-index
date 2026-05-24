@@ -21,10 +21,11 @@ Implemented:
 - Minimal CLI entrypoint.
 - `semantic-index --help`.
 - `semantic-index version`.
+- `semantic-index build` — Markdown file discovery with path validation,
+  excluded dirs, symlink safety, and summary output.
 
 Not implemented yet:
 
-- Markdown discovery.
 - Markdown chunking.
 - Embedding generation.
 - Search.

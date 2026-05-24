@@ -2,7 +2,7 @@
 
 `semantic-index` is a CLI-first tool for turning local Markdown notes into retrievable context for AI agents.
 
-Current status: **initial scaffold**. It does not build indexes or run semantic search yet; this first step only provides the project structure and a minimal CLI.
+Current status: **pre-alpha**. The build command can discover Markdown files locally. Index building and semantic search are not implemented yet.
 
 ## Goal
 
@@ -12,21 +12,21 @@ Current status: **initial scaffold**. It does not build indexes or run semantic 
 - Search in memory without a database.
 - Persist the index in simple local files (`docs.jsonl` + `index.npz`) when implemented.
 
-## Initial scope
+## Current scope
 
 Included now:
 
 - Installable Python project.
 - `semantic-index` CLI entrypoint.
-- Minimal commands:
+- Commands:
   - `semantic-index --help`
   - `semantic-index version`
+  - `semantic-index build <path>` — discover Markdown files safely
 - Planned architecture documentation in [`docs/architecture.md`](docs/architecture.md).
 
 Not included yet:
 
-- Recursive Markdown reading.
-- Real document chunking.
+- Recursive Markdown chunking.
 - Embeddings with `fastembed`.
 - Search with `numpy`.
 - `docs.jsonl` / `index.npz` persistence.
@@ -57,7 +57,26 @@ Alternative without installing the package:
 ```bash
 PYTHONPATH=src python -m semantic_index --help
 PYTHONPATH=src python -m semantic_index version
+PYTHONPATH=src python -m semantic_index build ./notes
+PYTHONPATH=src python -m semantic_index build ./docs --out ./my-index
 ```
+
+### Build command examples
+
+```bash
+# Discover Markdown files in a directory
+semantic-index build ./notes
+
+# Use a single Markdown file as input
+semantic-index build ./notes/project.md
+
+# Specify a custom output directory (index not built yet)
+semantic-index build ./notes --out ./my-index
+```
+
+The build command validates paths, skips common generated directories (`.git`,
+`.venv`, `.semantic-index`, `.embeddings`, `__pycache__`), ignores symlinks,
+and prints a deterministic summary of discovered files.
 
 ## Testing
 
@@ -80,9 +99,11 @@ semantic-index/
 │   └── semantic_index/
 │       ├── __init__.py
 │       ├── __main__.py
-│       └── cli.py
+│       ├── cli.py
+│       └── discovery.py
 ├── tests/
-│   └── test_cli.py
+│   ├── test_cli.py
+│   └── test_discovery.py
 ├── .gitignore
 ├── pyproject.toml
 └── README.md
