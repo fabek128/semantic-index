@@ -71,6 +71,7 @@ Rules:
 - If `gh project` reports missing `project` or `read:project` scope, stop and ask Fabian to authorize the GitHub CLI with the required project scope before creating or updating project-backed issues.
 - Create a focused branch for each issue or small set of closely related issues.
 - Open a PR targeting `main` after finishing work on every issue.
+- After finishing issue work, tell Fabian explicitly that the issue work is complete and provide the PR URL.
 - Open a PR for review before merging changes into `main`.
 - Link PRs to issues using GitHub keywords when appropriate, for example `Fixes #123`.
 - Keep issues and PRs small, concrete, and easy for agents to understand.
@@ -88,6 +89,7 @@ Issue creation checklist:
 7. Add issue comments for blockers, risks, decisions, or useful extra context.
 8. Only then create a branch and start implementation.
 9. After completing the issue work, push the branch and open a PR targeting `main`.
+10. Tell Fabian that the issue work is complete and include the PR URL in the final response.
 
 Milestone roadmap:
 
