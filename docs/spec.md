@@ -86,7 +86,7 @@ Use this option if you already have `torch` installed, want more control, or pla
 
 | Model | Dims | Best for | Note |
 |-------|------|----------|------|
-| `intfloat/multilingual-e5-small` | 384 | Spanish and multilingual | Recommended default; use `query:` / `passage:` |
+| `intfloat/multilingual-e5-small` | 384 | Spanish and multilingual | Not supported in fastembed >=0.8; use `paraphrase-multilingual-MiniLM-L12-v2` instead |
 | `paraphrase-multilingual-MiniLM-L12-v2` | 384 | Simple multilingual use | Easy with sentence-transformers |
 | `BAAI/bge-small-en-v1.5` | 384 | English, good quality/size | Very good retrieval in English |
 | `all-MiniLM-L6-v2` | 384 | English, very lightweight | Widely used, but not ideal as a Spanish default |

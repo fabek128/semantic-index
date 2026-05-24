@@ -11,7 +11,10 @@ requires-python = ">=3.10"
 authors = [
   { name = "Fabian" }
 ]
-dependencies = []
+dependencies = [
+    "fastembed>=0.5.0",
+    "numpy>=1.26.0",
+]
 keywords = ["semantic-search", "markdown", "cli", "local-first", "ai-agents"]
 classifiers = [
   "Programming Language :: Python :: 3",

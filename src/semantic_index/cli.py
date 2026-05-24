@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Sequence
 
 from semantic_index import __version__
+from semantic_index.chunker import chunk_markdown
 from semantic_index.discovery import discover_markdown
 
 PACKAGE_NAME = "semantic-index"
@@ -38,10 +39,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     build_parser_inst = subcommands.add_parser(
         "build",
-        help="discover Markdown files and print a summary",
+        help="discover and index Markdown files",
         description=(
-            "Discover Markdown files from a local input path and print a "
-            "summary. No index is built yet."
+            "Discover Markdown files from a local input path, split them "
+            "into chunks, generate local embeddings, and persist the index "
+            "as docs.jsonl + index.npz."
         ),
     )
     build_parser_inst.add_argument(
@@ -52,7 +54,7 @@ def build_parser() -> argparse.ArgumentParser:
     build_parser_inst.add_argument(
         "--out",
         default=".semantic-index",
-        help="output directory for future index data (default: .semantic-index)",
+        help="output directory for index data (default: .semantic-index)",
     )
     build_parser_inst.set_defaults(handler=handle_build)
 
@@ -64,8 +66,9 @@ def handle_version(_args: argparse.Namespace) -> int:
     return 0
 
 
-def handle_build(args: argparse.Namespace) -> int:
+def handle_build(args: argparse.Namespace, embedder=None) -> int:
     input_path = Path(args.input_path)
+    output_dir = Path(args.out)
 
     try:
         files = discover_markdown(input_path)
@@ -83,11 +86,52 @@ def handle_build(args: argparse.Namespace) -> int:
         print(f"No Markdown files found in: {input_path}")
         return 0
 
-    print(f"Output directory: {args.out}")
-    print(f"Discovered {len(files)} Markdown file(s):")
-    for f in files:
-        print(f"  {f}")
+    # Chunk all files
+    all_chunks: list[dict] = []
+    for md_file in files:
+        try:
+            chunks = chunk_markdown(md_file)
+        except UnicodeDecodeError as exc:
+            print(f"Error reading {md_file}: {exc}", file=sys.stderr)
+            return 1
+        except FileNotFoundError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 1
+        all_chunks.extend(chunks)
 
+    if not all_chunks:
+        print("No chunks generated from the discovered Markdown files.")
+        return 0
+
+    # Create the embedder (allow injection for tests)
+    if embedder is None:
+        try:
+            from semantic_index.indexer import FastEmbedEmbedder
+
+            embedder = FastEmbedEmbedder()
+        except ImportError as exc:
+            print(
+                f"Error: missing dependency — {exc}. "
+                f"Run: pip install fastembed numpy",
+                file=sys.stderr,
+            )
+            return 1
+
+    from semantic_index.indexer import build_index
+
+    # Build and persist the index
+    try:
+        build_index(all_chunks, output_dir, embedder)
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+    except OSError as exc:
+        print(f"Error: cannot write to {output_dir} — {exc}", file=sys.stderr)
+        return 1
+
+    print(f"Index built in: {output_dir.resolve()}")
+    print(f"  Files discovered: {len(files)}")
+    print(f"  Chunks indexed:   {len(all_chunks)}")
     return 0
 
 

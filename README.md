@@ -2,15 +2,15 @@
 
 `semantic-index` is a CLI-first tool for turning local Markdown notes into retrievable context for AI agents.
 
-Current status: **pre-alpha**. The build command can discover Markdown files locally. Index building and semantic search are not implemented yet.
+Current status: **pre-alpha**. The build command can discover Markdown files, split them into chunks, generate local embeddings, and persist the index as `docs.jsonl` + `index.npz`.
 
 ## Goal
 
 - Read local Markdown documents.
 - Split them into useful retrieval chunks.
-- Generate local embeddings in a future stage.
+- Generate local embeddings.
 - Search in memory without a database.
-- Persist the index in simple local files (`docs.jsonl` + `index.npz`) when implemented.
+- Persist the index in simple local files (`docs.jsonl` + `index.npz`).
 
 ## Current scope
 
@@ -21,20 +21,19 @@ Included now:
 - Commands:
   - `semantic-index --help`
   - `semantic-index version`
-  - `semantic-index build <path>` — discover Markdown files safely
-- Planned architecture documentation in [`docs/architecture.md`](docs/architecture.md).
+  - `semantic-index build <path>` — discover, chunk, embed, and persist index
+- Architecture documentation in [`docs/architecture.md`](docs/architecture.md).
+- Default embedding model: `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (384 dims, multilingual).
 
 Not included yet:
 
-- Embeddings with `fastembed`.
 - Search with `numpy`.
-- `docs.jsonl` / `index.npz` persistence.
 - APIs, web servers, databases, or external services.
 
 ## Requirements
 
 - Python 3.10 or newer.
-- No external runtime dependencies in this scaffold.
+- Dependencies: `fastembed`, `numpy` (installed automatically with the package).
 
 ## Development installation
 
@@ -76,6 +75,20 @@ semantic-index build ./notes --out ./my-index
 The build command validates paths, skips common generated directories (`.git`,
 `.venv`, `.semantic-index`, `.embeddings`, `__pycache__`), ignores symlinks,
 and prints a deterministic summary of discovered files.
+
+### Index output
+
+```bash
+# Build a full index
+semantic-index build ./notes --out .semantic-index
+```
+
+The index produces two files:
+
+- `.semantic-index/docs.jsonl` — one JSON object per chunk with metadata
+  (id, path, title, heading, chunk_index, text).
+- `.semantic-index/index.npz` — normalized `float32` embedding matrix
+  (n_chunks × 384).
 
 ### Chunking (library module)
 
