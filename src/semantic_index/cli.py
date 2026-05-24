@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from importlib.metadata import PackageNotFoundError, version as package_version
 from pathlib import Path
@@ -57,6 +58,38 @@ def build_parser() -> argparse.ArgumentParser:
         help="output directory for index data (default: .semantic-index)",
     )
     build_parser_inst.set_defaults(handler=handle_build)
+
+    search_parser = subcommands.add_parser(
+        "search",
+        help="search an existing index",
+        description=(
+            "Load a built index and return the top-k most relevant "
+            "chunks for a free-text query."
+        ),
+    )
+    search_parser.add_argument(
+        "query",
+        type=str,
+        help="free-text search query",
+    )
+    search_parser.add_argument(
+        "--index",
+        default=".semantic-index",
+        help="index directory (default: .semantic-index)",
+    )
+    search_parser.add_argument(
+        "--top-k",
+        type=int,
+        default=5,
+        help="number of results to return (default: 5)",
+    )
+    search_parser.add_argument(
+        "--format",
+        choices=["text", "json", "jsonl"],
+        default="text",
+        help="output format (default: text)",
+    )
+    search_parser.set_defaults(handler=handle_search)
 
     return parser
 
@@ -132,6 +165,65 @@ def handle_build(args: argparse.Namespace, embedder=None) -> int:
     print(f"Index built in: {output_dir.resolve()}")
     print(f"  Files discovered: {len(files)}")
     print(f"  Chunks indexed:   {len(all_chunks)}")
+    return 0
+
+
+def handle_search(args: argparse.Namespace, embedder=None) -> int:
+    index_dir = Path(args.index)
+    top_k = args.top_k
+
+    if top_k < 1:
+        print("Error: --top-k must be >= 1", file=sys.stderr)
+        return 1
+
+    if not index_dir.is_dir():
+        print(f"Error: index directory not found: {index_dir}", file=sys.stderr)
+        return 1
+
+    if embedder is None:
+        try:
+            from semantic_index.indexer import FastEmbedEmbedder
+
+            embedder = FastEmbedEmbedder()
+        except ImportError as exc:
+            print(
+                f"Error: missing dependency — {exc}. "
+                f"Run: pip install fastembed numpy",
+                file=sys.stderr,
+            )
+            return 1
+
+    from semantic_index.indexer import search_index
+
+    try:
+        results = search_index(
+            index_dir,
+            args.query,
+            embedder,
+            top_k=top_k,
+        )
+    except FileNotFoundError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+
+    if args.format == "json":
+        print(json.dumps(results, ensure_ascii=False, indent=2))
+    elif args.format == "jsonl":
+        for r in results:
+            print(json.dumps(r, ensure_ascii=False))
+    else:
+        for r in results:
+            score = r["score"]
+            location = r.get("heading") or "(no heading)"
+            path = r["path"]
+            text = r["text"][:200].replace("\n", " ")
+            print(f"{score:.4f}  {path}  #{location}")
+            print(f"  {text}")
+            print()
+
     return 0
 
 

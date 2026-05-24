@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the architecture for `semantic-index`. The build command (discovery, chunking, embedding, persistence) is implemented. Semantic search is planned.
+This document describes the architecture for `semantic-index`. The build command (discovery, chunking, embedding, persistence) and the search command are implemented.
 
 ## Principles
 
@@ -77,9 +77,7 @@ Deterministic chunk ids:
 - Each file gets a short `md5` hash based on its resolved path.
 - Chunk ids are `{file_hash}_{chunk_index}`, making them stable for the same file path and chunk order.
 
-### 3. Search index
-
-Tentative future command:
+### 3. Search index (implemented)
 
 ```bash
 semantic-index search "query text" --index .semantic-index --top-k 5
@@ -93,20 +91,28 @@ Responsibilities:
 4. Normalize the query.
 5. Compute dot products with `numpy`.
 6. Sort results by descending score.
-7. Print path, heading, score, and snippet.
+7. Print results in the requested format.
 
-Tentative future human-readable output format:
+Output formats:
 
-```text
-0.8123 notes/project.md#Architecture
-Relevant chunk text...
-```
+- `text` (default) — human-readable with score, path, heading, and snippet:
 
-Tentative future agent-readable output format:
+  ```text
+  0.8123  notes/project.md  #Architecture
+    Relevant chunk text...
+  ```
 
-```bash
-semantic-index search "auth flow" --format jsonl --top-k 8
-```
+- `json` — JSON array of result objects (score + full chunk metadata):
+
+  ```bash
+  semantic-index search "auth flow" --format json --top-k 8
+  ```
+
+- `jsonl` — one JSON object per line (agent-friendly):
+
+  ```bash
+  semantic-index search "auth flow" --format jsonl --top-k 8
+  ```
 
 ### 4. AI-agent integration
 

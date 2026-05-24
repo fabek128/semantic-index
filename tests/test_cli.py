@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import io
 import json
@@ -23,6 +24,7 @@ sys.path.insert(0, str(SRC_DIR))
 
 from semantic_index import __version__  # noqa: E402
 from semantic_index import cli  # noqa: E402
+from semantic_index.indexer import build_index  # noqa: E402
 
 
 class FakeEmbedder:
@@ -229,6 +231,115 @@ class CliBuildTests(unittest.TestCase):
         with (out_dir / "docs.jsonl").open("r", encoding="utf-8") as f:
             n_chunks = sum(1 for _ in f)
         self.assertEqual(embeddings.shape[0], n_chunks)
+
+
+class CliSearchTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self._tmp.name)
+        self.embedder = FakeEmbedder(dims=4)
+        # Build an index with two chunks
+        self._touch("a.md")
+        self._touch("b.md")
+        self.index_dir = self.root / "index"
+        chunks = [
+            {"id": "c0", "text": "Hello world", "path": str(self.root / "a.md"), "title": "First", "heading": "H1", "chunk_index": 0},
+            {"id": "c1", "text": "Foo bar baz", "path": str(self.root / "b.md"), "title": "Second", "heading": "H2", "chunk_index": 0},
+        ]
+        build_index(chunks, self.index_dir, self.embedder)
+
+    def tearDown(self) -> None:
+        self._tmp.cleanup()
+
+    def _touch(self, *parts: str) -> Path:
+        path = self.root.joinpath(*parts)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("# Test\n\nContent.", encoding="utf-8")
+        return path
+
+    def test_search_help_succeeds(self) -> None:
+        exit_code, out = CliEntrypointTests().run_main("search", "--help")
+        self.assertEqual(exit_code, 0)
+        self.assertIn("usage:", out)
+        self.assertIn("--index", out)
+        self.assertIn("--top-k", out)
+
+    def _search(self, query: str, index: str | None = None, top_k: int = 5) -> tuple[int, str, str]:
+        args = argparse.Namespace()
+        args.query = query
+        args.index = index or str(self.index_dir)
+        args.top_k = top_k
+        args.format = "text"
+        args.handler = cli.handle_search
+
+        buf_out = io.StringIO()
+        buf_err = io.StringIO()
+        old_out, old_err = sys.stdout, sys.stderr
+        sys.stdout = buf_out
+        sys.stderr = buf_err
+        try:
+            exit_code = cli.handle_search(args, embedder=self.embedder)
+        finally:
+            sys.stdout = old_out
+            sys.stderr = old_err
+        return exit_code, buf_out.getvalue(), buf_err.getvalue()
+
+    def _search_format(
+        self, query: str, fmt: str, index: str | None = None
+    ) -> tuple[int, str, str]:
+        args = argparse.Namespace()
+        args.query = query
+        args.index = index or str(self.index_dir)
+        args.top_k = 5
+        args.format = fmt
+        args.handler = cli.handle_search
+
+        buf_out = io.StringIO()
+        buf_err = io.StringIO()
+        old_out, old_err = sys.stdout, sys.stderr
+        sys.stdout = buf_out
+        sys.stderr = buf_err
+        try:
+            exit_code = cli.handle_search(args, embedder=self.embedder)
+        finally:
+            sys.stdout = old_out
+            sys.stderr = old_err
+        return exit_code, buf_out.getvalue(), buf_err.getvalue()
+
+    def test_search_text_format(self) -> None:
+        exit_code, out, err = self._search("hello")
+        self.assertEqual(exit_code, 0)
+        # Should contain at least one numeric score at line start
+        import re
+        self.assertTrue(re.search(r"^-?\d\.\d{4}", out, re.MULTILINE))
+        self.assertIn(self.root.name, out)
+
+    def test_search_json_format(self) -> None:
+        exit_code, out, err = self._search_format("hello", "json")
+        self.assertEqual(exit_code, 0)
+        results = json.loads(out)
+        self.assertIsInstance(results, list)
+        self.assertGreater(len(results), 0)
+        self.assertIn("score", results[0])
+        self.assertIn("text", results[0])
+
+    def test_search_jsonl_format(self) -> None:
+        exit_code, out, err = self._search_format("hello", "jsonl")
+        self.assertEqual(exit_code, 0)
+        lines = [json.loads(l) for l in out.strip().split("\n") if l]
+        self.assertGreater(len(lines), 0)
+        self.assertIn("score", lines[0])
+
+    def test_search_missing_index(self) -> None:
+        exit_code, out, err = self._search("hello", "/nonexistent/index")
+        self.assertEqual(exit_code, 1)
+        self.assertIn("Error:", err)
+
+    def test_search_invalid_top_k(self) -> None:
+        exit_code, out, err = self._search("hello", top_k=0)
+        self.assertEqual(exit_code, 1)
+        self.assertIn("Error:", err)
+        self.assertIn("top-k", err.lower())
 
 
 if __name__ == "__main__":
