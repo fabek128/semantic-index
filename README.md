@@ -23,6 +23,7 @@ Included now:
   - `semantic-index version`
   - `semantic-index build <path>` — discover, chunk, embed, and persist index
   - `semantic-index search <query>` — search an existing index with ranked results
+- Search modes: `semantic` (default), `lexical` (exact term matching), `hybrid` (combined)
 - Output formats: `text` (human-readable), `json`, `jsonl` (agent-friendly, see [JSON/JSONL schema](#jsonjsonl-schema))
 - Architecture documentation in [`docs/architecture.md`](docs/architecture.md).
 - Default embedding model: `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (384 dims, multilingual, no prefixes needed).
@@ -30,7 +31,6 @@ Included now:
 
 Not included yet:
 
-- Hybrid lexical/BM25 search.
 - Index merge / incremental indexing.
 - FAISS or ANN acceleration.
 - APIs, web servers, databases, or external services.

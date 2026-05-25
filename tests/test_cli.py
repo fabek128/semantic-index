@@ -341,12 +341,14 @@ class CliSearchTests(unittest.TestCase):
         self.assertIn("--index", out)
         self.assertIn("--top-k", out)
 
-    def _search(self, query: str, index: str | None = None, top_k: int = 5, max_chars: int = 200) -> tuple[int, str, str]:
+    def _search(self, query: str, index: str | None = None, top_k: int = 5, max_chars: int = 200, mode: str = "semantic", semantic_weight: float = 0.5) -> tuple[int, str, str]:
         args = argparse.Namespace()
         args.query = query
         args.index = index or str(self.index_dir)
         args.top_k = top_k
         args.max_chars = max_chars
+        args.mode = mode
+        args.semantic_weight = semantic_weight
         args.format = "text"
         args.handler = cli.handle_search
 
@@ -370,6 +372,8 @@ class CliSearchTests(unittest.TestCase):
         args.index = index or str(self.index_dir)
         args.top_k = 5
         args.max_chars = max_chars
+        args.mode = "semantic"
+        args.semantic_weight = 0.5
         args.format = fmt
         args.handler = cli.handle_search
 
@@ -461,6 +465,32 @@ class CliSearchTests(unittest.TestCase):
         exit_code, out, err = self._search("hello")
         self.assertEqual(exit_code, 1)
         self.assertIn("Error:", err)
+
+    def test_search_lexical_mode_finds_exact_terms(self) -> None:
+        exit_code, out, err = self._search("Foo", mode="lexical")
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Foo bar baz", out)
+
+    def test_search_lexical_mode_no_match(self) -> None:
+        exit_code, out, err = self._search("zzzznotfound", mode="lexical")
+        self.assertEqual(exit_code, 0)
+        self.assertIn("0.0000", out)
+
+    def test_search_hybrid_mode_returns_results(self) -> None:
+        exit_code, out, err = self._search("hello", mode="hybrid")
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Hello world", out)
+
+    def test_search_hybrid_mode_custom_weight(self) -> None:
+        exit_code, out, err = self._search("hello", mode="hybrid", semantic_weight=0.8)
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Hello world", out)
+
+    def test_search_invalid_mode(self) -> None:
+        exit_code, out, err = self._search("hello", mode="invalid")
+        # The CLI will fail because argparse validation will handle this
+        # Before argparse, our handler receives an unknown mode
+        self.assertEqual(exit_code, 1)
 
 
 class CliBuildErrorTests(unittest.TestCase):

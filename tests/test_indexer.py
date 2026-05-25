@@ -25,6 +25,7 @@ from semantic_index.indexer import (  # noqa: E402
     _normalize,
     _save_index,
     build_index,
+    hybrid_search,
     load_index,
     load_manifest,
     search_index,
@@ -563,3 +564,57 @@ class SearchIndexTests(unittest.TestCase):
         self.assertIn("dimension", str(ctx.exception).lower())
         self.assertIn("8", str(ctx.exception))
         self.assertIn("4", str(ctx.exception))
+
+
+class HybridSearchTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmp_dir = tempfile.TemporaryDirectory()
+        self.index_dir = Path(self._tmp_dir.name)
+        self.chunks = [
+            {"id": "c0", "text": "The quick brown fox jumps over the lazy dog",
+             "path": "/a.md", "title": "Animals", "heading": "Mammals", "chunk_index": 0},
+            {"id": "c1", "text": "Python is a programming language for software development",
+             "path": "/b.md", "title": "Programming", "heading": "Languages", "chunk_index": 0},
+            {"id": "c2", "text": "Error connecting to remote host on port 8080",
+             "path": "/c.md", "title": "Networking", "heading": "Errors", "chunk_index": 0},
+        ]
+        self.embedder = FakeEmbedder(dims=4)
+        build_index(self.chunks, self.index_dir, self.embedder)
+
+    def tearDown(self) -> None:
+        self._tmp_dir.cleanup()
+
+    def test_hybrid_returns_top_k(self) -> None:
+        results = hybrid_search(self.index_dir, "programming", self.embedder, top_k=2)
+        self.assertEqual(len(results), 2)
+
+    def test_hybrid_includes_scores(self) -> None:
+        results = hybrid_search(self.index_dir, "error", self.embedder, top_k=1)
+        self.assertIn("score", results[0])
+        self.assertIn("semantic_score", results[0])
+        self.assertIn("lexical_score", results[0])
+
+    def test_hybrid_semantic_weight_one(self) -> None:
+        results = hybrid_search(self.index_dir, "error", self.embedder, top_k=3, semantic_weight=1.0)
+        scores = [r["score"] for r in results]
+        sem_scores = [r["semantic_score"] for r in results]
+        for s, sem in zip(scores, sem_scores):
+            self.assertAlmostEqual(s, sem)
+
+    def test_hybrid_semantic_weight_zero(self) -> None:
+        results = hybrid_search(self.index_dir, "error", self.embedder, top_k=3, semantic_weight=0.0)
+        scores = [r["score"] for r in results]
+        lex_scores = [r["lexical_score"] for r in results]
+        max_lex = max(lex_scores) if lex_scores else 1.0
+        for s, lex in zip(scores, lex_scores):
+            if max_lex > 0:
+                self.assertAlmostEqual(s, lex / max_lex)
+
+    def test_hybrid_invalid_weight_raises(self) -> None:
+        for bad_weight in (-0.1, 1.1):
+            with self.assertRaises(ValueError):
+                hybrid_search(self.index_dir, "test", self.embedder, semantic_weight=bad_weight)
+
+    def test_hybrid_invalid_top_k_raises(self) -> None:
+        with self.assertRaises(ValueError):
+            hybrid_search(self.index_dir, "test", self.embedder, top_k=0)
