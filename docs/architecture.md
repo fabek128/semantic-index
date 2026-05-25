@@ -29,7 +29,8 @@ Current responsibilities:
 6. Convert each document into Markdown chunks.
 7. Generate local embeddings with `fastembed`.
 8. Normalize vectors for cosine similarity via dot product.
-9. Save:
+   9. Save:
+   - `.semantic-index/manifest.json`: self-describing index metadata.
    - `.semantic-index/docs.jsonl`: chunk text and metadata.
    - `.semantic-index/index.npz`: normalized `float32` embedding matrix.
 
@@ -85,8 +86,9 @@ semantic-index search "query text" --index .semantic-index --top-k 5
 
 Responsibilities:
 
-1. Load `docs.jsonl`.
-2. Load `index.npz`.
+1. Load and validate `manifest.json` (schema version, embedding dimensions).
+2. Load `docs.jsonl`.
+3. Load `index.npz`.
 3. Generate a local embedding for the query.
 4. Normalize the query.
 5. Compute dot products with `numpy`.
@@ -138,11 +140,26 @@ The build command writes to a user-specified `--out` directory (default `.semant
 
 ```text
 .semantic-index/
-├── docs.jsonl
-└── index.npz
+├── manifest.json     # Self-describing index metadata
+├── docs.jsonl        # Chunk metadata and text (JSONL)
+└── index.npz         # Normalized float32 embedding matrix
 ```
 
-`docs.jsonl` stores chunk metadata and text (one JSON object per line). `index.npz` stores the normalized `float32` embedding matrix (n_chunks × dims).
+`manifest.json` fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `schema_version` | int | Manifest schema version (currently 1) |
+| `package_version` | str | `semantic-index` version that built the index |
+| `model_name` | str or null | Embedding model name |
+| `embedding_dimensions` | int or null | Embedding vector dimensions |
+| `chunk_count` | int | Number of chunks indexed |
+| `created_at` | str | ISO 8601 creation timestamp |
+| `chunking` | object | Chunking parameters (`max_chars`) |
+| `source` | object | Source summary (`file_count`, `directories`) |
+
+The manifest is validated during search. Incompatible or missing metadata
+produces a clear error and a non-zero exit code.
 
 Reasons:
 

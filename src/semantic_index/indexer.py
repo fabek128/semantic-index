@@ -7,13 +7,17 @@ chunked Markdown content using a pluggable embedder.
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Protocol
 
 import numpy as np
 
+from semantic_index import __version__
+
 
 DEFAULT_QUERY_PREFIX = "query: "
+MANIFEST_SCHEMA_VERSION = 1
 
 
 class Embedder(Protocol):
@@ -28,6 +32,11 @@ def build_index(
     chunks: list[dict],
     output_dir: Path,
     embedder: Embedder,
+    *,
+    model_name: str | None = None,
+    file_count: int | None = None,
+    source_dirs: list[str] | None = None,
+    max_chars: int = 1800,
 ) -> None:
     """Embed chunks, normalize vectors, and persist to *output_dir*.
 
@@ -39,6 +48,14 @@ def build_index(
         Target directory for ``docs.jsonl`` and ``index.npz``.
     embedder:
         An ``Embedder`` instance.
+    model_name:
+        Optional name of the embedding model (stored in manifest).
+    file_count:
+        Optional number of source files discovered.
+    source_dirs:
+        Optional list of source directories.
+    max_chars:
+        Maximum chunk size used during chunking (stored in manifest).
 
     Raises
     ------
@@ -53,7 +70,7 @@ def build_index(
     texts = [c["text"] for c in chunks]
     embeddings = embedder.embed(texts)
     embeddings = _normalize(embeddings)
-    _save_index(output_dir, chunks, embeddings)
+    _save_index(output_dir, chunks, embeddings, model_name=model_name, file_count=file_count, source_dirs=source_dirs, max_chars=max_chars)
 
 
 def _normalize(vectors: np.ndarray) -> np.ndarray:
@@ -69,6 +86,11 @@ def _save_index(
     output_dir: Path,
     chunks: list[dict],
     embeddings: np.ndarray,
+    *,
+    model_name: str | None = None,
+    file_count: int | None = None,
+    source_dirs: list[str] | None = None,
+    max_chars: int = 1800,
 ) -> None:
     """Persist chunk metadata and embeddings to *output_dir*."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -80,6 +102,87 @@ def _save_index(
         for chunk in chunks:
             f.write(json.dumps(chunk, ensure_ascii=False) + "\n")
 
+    _save_manifest(
+        output_dir,
+        model_name=model_name,
+        model_dimensions=embeddings.shape[1],
+        chunk_count=len(chunks),
+        file_count=file_count,
+        source_dirs=source_dirs,
+        max_chars=max_chars,
+    )
+
+
+def _save_manifest(
+    output_dir: Path,
+    *,
+    model_name: str | None = None,
+    model_dimensions: int | None = None,
+    chunk_count: int = 0,
+    file_count: int | None = None,
+    source_dirs: list[str] | None = None,
+    max_chars: int = 1800,
+) -> dict:
+    """Write ``manifest.json`` to *output_dir* and return the manifest."""
+    manifest: dict = {
+        "schema_version": MANIFEST_SCHEMA_VERSION,
+        "package_version": __version__,
+        "model_name": model_name,
+        "embedding_dimensions": model_dimensions,
+        "chunk_count": chunk_count,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "chunking": {"max_chars": max_chars},
+        "source": {
+            "file_count": file_count,
+            "directories": sorted(source_dirs) if source_dirs else None,
+        },
+    }
+    manifest_path = output_dir / "manifest.json"
+    with manifest_path.open("w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+    return manifest
+
+
+def load_manifest(index_dir: Path) -> dict:
+    """Load and validate ``manifest.json`` from *index_dir*.
+
+    Returns
+    -------
+    Manifest dict.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the manifest file is missing.
+    ValueError
+        If the manifest is malformed or has an unsupported schema version.
+    """
+    manifest_path = index_dir / "manifest.json"
+    if not manifest_path.exists():
+        raise FileNotFoundError(
+            f"Index metadata not found: {manifest_path}. "
+            f"This index was built with an older version of semantic-index. "
+            f"Rebuild with `semantic-index build` to add metadata."
+        )
+
+    with manifest_path.open("r", encoding="utf-8") as f:
+        try:
+            manifest = json.load(f)
+        except json.JSONDecodeError as exc:
+            raise ValueError(
+                f"Malformed manifest.json: {exc}"
+            ) from exc
+
+    if manifest.get("schema_version") != MANIFEST_SCHEMA_VERSION:
+        raise ValueError(
+            f"Unsupported manifest schema version {manifest.get('schema_version')} "
+            f"(expected {MANIFEST_SCHEMA_VERSION}). "
+            f"Rebuild the index with a newer version of semantic-index."
+        )
+
+    return manifest
+
 
 # ---------------------------------------------------------------------------
 #  Search
@@ -87,7 +190,7 @@ def _save_index(
 
 
 def load_index(index_dir: Path) -> tuple[list[dict], np.ndarray]:
-    """Load ``docs.jsonl`` and ``index.npz`` from *index_dir*.
+    """Load manifest, ``docs.jsonl`` and ``index.npz`` from *index_dir*.
 
     Returns
     -------
@@ -97,10 +200,12 @@ def load_index(index_dir: Path) -> tuple[list[dict], np.ndarray]:
     Raises
     ------
     FileNotFoundError
-        If the index directory or required files are missing.
+        If the index directory, manifest, or required files are missing.
     ValueError
         If files are malformed, corrupt, or inconsistent.
     """
+    manifest = load_manifest(index_dir)
+
     docs_path = index_dir / "docs.jsonl"
     npz_path = index_dir / "index.npz"
 
@@ -131,6 +236,14 @@ def load_index(index_dir: Path) -> tuple[list[dict], np.ndarray]:
     if "embeddings" not in data:
         raise ValueError("index.npz missing 'embeddings' key")
     embeddings = data["embeddings"]
+
+    manifest_dims = manifest.get("embedding_dimensions")
+    if manifest_dims is not None and embeddings.shape[1] != manifest_dims:
+        raise ValueError(
+            f"Embedding dimension mismatch: loaded embeddings have "
+            f"{embeddings.shape[1]} dimensions, but manifest reports "
+            f"{manifest_dims}. The index may be corrupted."
+        )
 
     if embeddings.shape[0] != len(chunks):
         raise ValueError(
@@ -176,6 +289,12 @@ def search_index(
 
     texts = [f"{query_prefix}{query}"]
     q_vec = embedder.embed(texts)
+    if q_vec.shape[1] != embeddings.shape[1]:
+        raise ValueError(
+            f"Embedder produces {q_vec.shape[1]}-dimensional vectors, "
+            f"but the index has {embeddings.shape[1]} dimensions. "
+            f"The search model differs from the one used during indexing."
+        )
     q_vec = _normalize(q_vec)
 
     scores = (q_vec @ embeddings.T)[0]
@@ -209,6 +328,7 @@ class FastEmbedEmbedder:
         from fastembed import TextEmbedding  # type: ignore[import-untyped]
 
         model = model_name or self.DEFAULT_MODEL
+        self.model_name: str = model
         self._model = TextEmbedding(model_name=model)
 
     def embed(self, texts: list[str]) -> np.ndarray:

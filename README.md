@@ -65,12 +65,19 @@ chunks each file, generates local embeddings, and writes the index.
 semantic-index build ./notes --out .semantic-index
 ```
 
-The index produces two files:
+The index produces three files:
 
+- `.semantic-index/manifest.json` — self-describing index metadata
+  (schema version, model name, dimensions, chunk count, creation timestamp).
 - `.semantic-index/docs.jsonl` — one JSON object per chunk with metadata
   (id, path, title, heading, chunk_index, text).
 - `.semantic-index/index.npz` — normalized `float32` embedding matrix
   (n_chunks × 384).
+
+Search validates the manifest to ensure the index was built with a compatible
+schema version and that the embedder model dimensions match the stored
+embeddings. If the manifest is missing, corrupt, or incompatible, the search
+command prints a clear error and exits non-zero.
 
 ### Chunking (library module)
 
