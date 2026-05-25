@@ -23,7 +23,7 @@ Included now:
   - `semantic-index version`
   - `semantic-index build <path>` — discover, chunk, embed, and persist index
   - `semantic-index search <query>` — search an existing index with ranked results
-- Output formats: `text` (human-readable), `json`, `jsonl` (agent-friendly)
+- Output formats: `text` (human-readable), `json`, `jsonl` (agent-friendly, see [JSON/JSONL schema](#jsonjsonl-schema))
 - Architecture documentation in [`docs/architecture.md`](docs/architecture.md).
 - Default embedding model: `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (384 dims, multilingual, no prefixes needed).
 - Prefix policy: the default model does **not** use `passage:` / `query:` prefixes. E5-family models require them — see [`docs/spec.md#prefix-policy`](docs/spec.md).
@@ -85,6 +85,33 @@ Search validates the manifest to ensure the index was built with a compatible
 schema version and that the embedder model dimensions match the stored
 embeddings. If the manifest is missing, corrupt, or incompatible, the search
 command prints a clear error and exits non-zero.
+
+### JSON/JSONL schema
+
+The `json` format returns a JSON array of result objects. The `jsonl` format
+returns one JSON object per line. Each object has the following fields:
+
+```json
+{
+  "score": 0.8123,
+  "id": "a1b2c3d4e5f6_0",
+  "path": "/notes/project.md",
+  "title": "Project notes",
+  "heading": "Architecture",
+  "chunk_index": 0,
+  "text": "Relevant chunk text (truncated to --max-chars)"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `score` | float | Cosine similarity score (0–1) |
+| `id` | str | Deterministic chunk identifier |
+| `path` | str | Source Markdown file path |
+| `title` | str or null | Document title (first `#` heading or filename stem) |
+| `heading` | str or null | Current section heading |
+| `chunk_index` | int | Chunk index within the source file |
+| `text` | str | Chunk text, truncated to `--max-chars` characters |
 
 ### Chunking (library module)
 

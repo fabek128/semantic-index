@@ -89,6 +89,12 @@ def build_parser() -> argparse.ArgumentParser:
         default="text",
         help="output format (default: text)",
     )
+    search_parser.add_argument(
+        "--max-chars",
+        type=int,
+        default=200,
+        help="maximum characters per chunk in output (default: 200, 0 = no limit)",
+    )
     search_parser.set_defaults(handler=handle_search)
 
     return parser
@@ -194,9 +200,14 @@ def handle_build(args: argparse.Namespace, embedder=None) -> int:
 def handle_search(args: argparse.Namespace, embedder=None) -> int:
     index_dir = Path(args.index)
     top_k = args.top_k
+    max_chars = args.max_chars
 
     if top_k < 1:
         print("Error: --top-k must be >= 1", file=sys.stderr)
+        return 1
+
+    if max_chars < 0:
+        print("Error: --max-chars must be >= 0", file=sys.stderr)
         return 1
 
     if not index_dir.is_dir():
@@ -232,6 +243,11 @@ def handle_search(args: argparse.Namespace, embedder=None) -> int:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
 
+    # Truncate text in all results if max_chars > 0
+    if max_chars:
+        for r in results:
+            r["text"] = r["text"][:max_chars]
+
     if args.format == "json":
         print(json.dumps(results, ensure_ascii=False, indent=2))
     elif args.format == "jsonl":
@@ -242,7 +258,7 @@ def handle_search(args: argparse.Namespace, embedder=None) -> int:
             score = r["score"]
             location = r.get("heading") or "(no heading)"
             path = r["path"]
-            text = r["text"][:200].replace("\n", " ")
+            text = r["text"].replace("\n", " ")
             print(f"{score:.4f}  {path}  #{location}")
             print(f"  {text}")
             print()
