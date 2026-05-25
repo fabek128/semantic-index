@@ -215,6 +215,10 @@ semantic-index/
 │   ├── test_discovery.py
 │   ├── test_chunker.py
 │   └── test_indexer.py
+├── .github/
+│   └── workflows/
+│       └── ci.yml           # GitHub Actions CI
+├── CHANGELOG.md
 ├── .gitignore
 ├── pyproject.toml
 └── README.md
@@ -227,7 +231,7 @@ The CLI implements two commands:
 1. **`build`**: discover Markdown files, split into chunks, generate local embeddings, and save `docs.jsonl` + `index.npz`.
 2. **`search`**: load `docs.jsonl` + `index.npz`, embed the query, and return the best chunks with ranked scores.
 
-Future phases: hybrid search, index metadata and lifecycle, retrieval quality controls.
+Future phases: hybrid search, incremental indexing, ANN acceleration.
 
 See details in [`docs/architecture.md`](docs/architecture.md).
 
@@ -297,7 +301,10 @@ rm -rf /tmp/release-check
 ## Security and privacy
 
 - The tool operates only on local files explicitly provided by the user.
-- It must not send notes, embeddings, or metadata to external services.
+- It does not send notes, embeddings, or metadata to external services.
+- The first use of the build command downloads the default embedding model
+  from Hugging Face and caches it locally. This is a **one-time download**;
+  no note content is sent to external servers.
 - It must not use `pickle` to load untrusted indexes.
 - Local indexes may contain sensitive text derived from notes;
   `.semantic-index/`, `.embeddings/`, `docs.jsonl`, `index.npz`,
@@ -308,7 +315,7 @@ rm -rf /tmp/release-check
 Before every release, verify:
 
 - [ ] No secrets, tokens, or credentials are committed or logged.
-- [ ] No network calls are made during build or search.
+- [ ] No user note content is sent over the network. Model download is cached locally.
 - [ ] All user-facing errors go to stderr with no stack traces.
 - [ ] Symlinks are not followed during discovery.
 - [ ] Index files are written atomically (temp dir + rename).

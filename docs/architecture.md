@@ -28,11 +28,11 @@ Current responsibilities:
 5. Read each file as UTF-8.
 6. Convert each document into Markdown chunks.
 7. Generate local embeddings with `fastembed`.
-8. Normalize vectors for cosine similarity via dot product.
-   9. Save:
-   - `.semantic-index/manifest.json`: self-describing index metadata.
-   - `.semantic-index/docs.jsonl`: chunk text and metadata.
-   - `.semantic-index/index.npz`: normalized `float32` embedding matrix.
+ 8. Normalize vectors for cosine similarity via dot product.
+ 9. Save:
+    - `.semantic-index/manifest.json`: self-describing index metadata.
+    - `.semantic-index/docs.jsonl`: chunk text and metadata.
+    - `.semantic-index/index.npz`: normalized `float32` embedding matrix.
 
 Minimum metadata per chunk:
 
@@ -52,7 +52,7 @@ Security notes:
 - Do not follow symlinks by default until an explicit policy is defined.
 - Do not write outside the `--out` directory provided by the user.
 - Do not include secrets in logs.
-- Treat `docs.jsonl` and `index.npz` as sensitive data because they are derived from private notes.
+- Treat `manifest.json`, `docs.jsonl`, and `index.npz` as sensitive data because they are derived from private notes.
 
 ### 2. Markdown chunking (implemented — used by the build command)
 
@@ -89,7 +89,7 @@ Responsibilities:
 1. Load and validate `manifest.json` (schema version, embedding dimensions).
 2. Load `docs.jsonl`.
 3. Load `index.npz`.
-3. Generate a local embedding for the query.
+4. Generate a local embedding for the query.
 4. Normalize the query.
 5. Compute dot products with `numpy`.
 6. Sort results by descending score.
