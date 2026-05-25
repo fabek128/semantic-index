@@ -107,6 +107,18 @@ def build_parser() -> argparse.ArgumentParser:
         default=200,
         help="maximum characters per chunk in output (default: 200, 0 = no limit)",
     )
+    search_parser.add_argument(
+        "--mode",
+        choices=["semantic", "lexical", "hybrid"],
+        default="semantic",
+        help="search mode (default: semantic)",
+    )
+    search_parser.add_argument(
+        "--semantic-weight",
+        type=float,
+        default=0.5,
+        help="weight for semantic score in hybrid mode, 0-1 (default: 0.5)",
+    )
     search_parser.set_defaults(handler=handle_search)
 
     return parser
@@ -232,6 +244,8 @@ def handle_search(args: argparse.Namespace, embedder=None) -> int:
     index_dir = Path(args.index)
     top_k = args.top_k
     max_chars = args.max_chars
+    mode = args.mode
+    semantic_weight = args.semantic_weight
 
     if top_k < 1:
         print("Error: --top-k must be >= 1", file=sys.stderr)
@@ -245,34 +259,85 @@ def handle_search(args: argparse.Namespace, embedder=None) -> int:
         print(f"Error: index directory not found: {index_dir}", file=sys.stderr)
         return 1
 
-    if embedder is None:
-        try:
-            from semantic_index.indexer import FastEmbedEmbedder
+    if mode not in ("semantic", "lexical", "hybrid"):
+        print(f"Error: invalid search mode '{mode}'. Use semantic, lexical, or hybrid.", file=sys.stderr)
+        return 1
 
-            embedder = FastEmbedEmbedder()
-        except ImportError as exc:
-            print(
-                f"Error: missing dependency — {exc}. "
-                f"Run: pip install fastembed numpy",
-                file=sys.stderr,
-            )
+    if mode == "lexical":
+        from semantic_index.indexer import load_index
+        from semantic_index.lexical import search_index as lexical_search
+
+        try:
+            chunks, _embeddings = load_index(index_dir)
+        except (FileNotFoundError, ValueError) as exc:
+            print(f"Error: {exc}", file=sys.stderr)
             return 1
 
-    from semantic_index.indexer import search_index
+        try:
+            results = lexical_search(args.query, chunks, top_k=top_k)
+        except ValueError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 1
+    elif mode == "hybrid":
+        if embedder is None:
+            try:
+                from semantic_index.indexer import FastEmbedEmbedder
 
-    try:
-        results = search_index(
-            index_dir,
-            args.query,
-            embedder,
-            top_k=top_k,
-        )
-    except FileNotFoundError as exc:
-        print(f"Error: {exc}", file=sys.stderr)
-        return 1
-    except ValueError as exc:
-        print(f"Error: {exc}", file=sys.stderr)
-        return 1
+                embedder = FastEmbedEmbedder()
+            except ImportError as exc:
+                print(
+                    f"Error: missing dependency — {exc}. "
+                    f"Run: pip install fastembed numpy",
+                    file=sys.stderr,
+                )
+                return 1
+
+        from semantic_index.indexer import hybrid_search
+
+        try:
+            results = hybrid_search(
+                index_dir,
+                args.query,
+                embedder,
+                top_k=top_k,
+                semantic_weight=semantic_weight,
+            )
+        except FileNotFoundError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 1
+        except ValueError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 1
+    else:
+        # semantic mode (default)
+        if embedder is None:
+            try:
+                from semantic_index.indexer import FastEmbedEmbedder
+
+                embedder = FastEmbedEmbedder()
+            except ImportError as exc:
+                print(
+                    f"Error: missing dependency — {exc}. "
+                    f"Run: pip install fastembed numpy",
+                    file=sys.stderr,
+                )
+                return 1
+
+        from semantic_index.indexer import search_index
+
+        try:
+            results = search_index(
+                index_dir,
+                args.query,
+                embedder,
+                top_k=top_k,
+            )
+        except FileNotFoundError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 1
+        except ValueError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 1
 
     # Truncate text in all results if max_chars > 0
     if max_chars:

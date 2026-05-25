@@ -104,6 +104,14 @@ Deterministic chunk ids:
 semantic-index search "query text" --index .semantic-index --top-k 5
 ```
 
+Search modes:
+
+- ``semantic`` (default) — cosine similarity with stored embeddings.
+- ``lexical`` — exact term-frequency matching over chunk text, heading,
+  and title.  No embedding model required.
+- ``hybrid`` — weighted combination of semantic and lexical scores
+  (``--semantic-weight``, default 0.5).
+
 Responsibilities:
 
 1. Load and validate `manifest.json` (schema version, embedding dimensions, chunk count).

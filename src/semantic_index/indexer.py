@@ -378,6 +378,79 @@ def search_index(
     return results
 
 
+def hybrid_search(
+    index_dir: Path,
+    query: str,
+    embedder: Embedder,
+    top_k: int = 5,
+    query_prefix: str = DEFAULT_QUERY_PREFIX,
+    semantic_weight: float = 0.5,
+) -> list[dict]:
+    """Hybrid search combining semantic (cosine) and lexical scores.
+
+    Parameters
+    ----------
+    index_dir:
+        Directory containing ``docs.jsonl`` and ``index.npz``.
+    query:
+        Free-text search query.
+    embedder:
+        An ``Embedder`` instance (must use the same model as the index).
+    top_k:
+        Maximum number of results to return.
+    query_prefix:
+        Prefix prepended to the query before embedding.
+    semantic_weight:
+        Weight for the semantic (cosine) score.  Lexical weight is
+        ``1 - semantic_weight``.  Default 0.5 (equal weight).
+    """
+    from semantic_index.lexical import score_query as lexical_score_query
+
+    if top_k < 1:
+        raise ValueError(f"top_k must be >= 1, got {top_k}")
+    if not 0 <= semantic_weight <= 1:
+        raise ValueError(f"semantic_weight must be 0-1, got {semantic_weight}")
+
+    chunks, embeddings = load_index(index_dir)
+
+    # Semantic scores
+    texts = [f"{query_prefix}{query}"]
+    q_vec = embedder.embed(texts)
+    if q_vec.shape[1] != embeddings.shape[1]:
+        raise ValueError(
+            f"Embedder produces {q_vec.shape[1]}-dimensional vectors, "
+            f"but the index has {embeddings.shape[1]} dimensions. "
+            f"The search model differs from the one used during indexing."
+        )
+    q_vec = _normalize(q_vec)
+    semantic_scores = (q_vec @ embeddings.T)[0].tolist()
+    semantic_scores = [float(s) for s in semantic_scores]
+
+    # Lexical scores
+    lexical_scores = lexical_score_query(query, chunks)
+    max_lex = max(lexical_scores) if lexical_scores else 1.0
+    if max_lex > 0:
+        lexical_scores = [s / max_lex for s in lexical_scores]
+    lexical_weight = 1.0 - semantic_weight
+
+    # Combine
+    combined = [
+        semantic_weight * sem + lexical_weight * lex
+        for sem, lex in zip(semantic_scores, lexical_scores)
+    ]
+    top_indices = np.argsort(combined)[-top_k:][::-1]
+
+    results: list[dict] = []
+    for idx in top_indices:
+        results.append({
+            "score": float(combined[idx]),
+            "semantic_score": float(semantic_scores[idx]),
+            "lexical_score": float(lexical_scores[idx] * max_lex),
+            **chunks[idx],
+        })
+    return results
+
+
 # ---------------------------------------------------------------------------
 #  Production embedder
 # ---------------------------------------------------------------------------

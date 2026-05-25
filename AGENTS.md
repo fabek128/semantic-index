@@ -30,6 +30,7 @@ Implemented:
   `docs.jsonl` + `index.npz`.
 - `semantic-index search` — local semantic search with ranked results
   and agent-friendly output formats (`text`, `json`, `jsonl`).
+- Search modes: `semantic`, `lexical`, `hybrid`.
 
 Not implemented yet:
 
