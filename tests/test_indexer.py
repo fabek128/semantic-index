@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import sys
 import tempfile
@@ -336,6 +337,20 @@ class CorruptIndexTests(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
             load_index(self.index_dir)
         self.assertIn("Malformed", str(ctx.exception))
+
+    def test_load_index_rejects_pickle(self) -> None:
+        """Verify that ``np.load(..., allow_pickle=False)`` rejects
+        pickle-based ``.npz`` content."""
+        import pickle
+        obj = {"not": "a plain array"}
+        buf = io.BytesIO()
+        np.savez_compressed(buf, data=np.array([pickle.dumps(obj)]))
+        (self.index_dir / "index.npz").write_bytes(buf.getvalue())
+        with (self.index_dir / "docs.jsonl").open("w", encoding="utf-8") as f:
+            f.write('{"id": "c0", "text": "A"}\n')
+        self._write_manifest()
+        with self.assertRaises(ValueError):
+            load_index(self.index_dir)
 
 
 # ---------------------------------------------------------------------------

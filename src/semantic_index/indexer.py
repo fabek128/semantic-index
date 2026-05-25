@@ -256,7 +256,7 @@ def load_index(index_dir: Path) -> tuple[list[dict], np.ndarray]:
         raise ValueError("docs.jsonl is empty")
 
     try:
-        data = np.load(npz_path)
+        data = np.load(npz_path, allow_pickle=False)
     except (OSError, ValueError) as exc:
         raise ValueError(f"Failed to load index file {npz_path}: {exc}") from exc
 
