@@ -341,6 +341,68 @@ class CliSearchTests(unittest.TestCase):
         self.assertIn("Error:", err)
         self.assertIn("top-k", err.lower())
 
+    def test_search_corrupt_index_npz_returns_error(self) -> None:
+        (self.index_dir / "index.npz").write_bytes(b"garbage")
+        exit_code, out, err = self._search("hello")
+        self.assertEqual(exit_code, 1)
+        self.assertIn("Error:", err)
+
+    def test_search_corrupt_jsonl_returns_error(self) -> None:
+        with (self.index_dir / "docs.jsonl").open("w", encoding="utf-8") as f:
+            f.write("{bad json\n")
+        exit_code, out, err = self._search("hello")
+        self.assertEqual(exit_code, 1)
+        self.assertIn("Error:", err)
+
+
+class CliBuildErrorTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self._tmp.name)
+        self.embedder = FakeEmbedder(dims=4)
+
+    def tearDown(self) -> None:
+        self._tmp.cleanup()
+
+    def _touch(self, *parts: str) -> Path:
+        path = self.root.joinpath(*parts)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("# Test\n\nContent.", encoding="utf-8")
+        return path
+
+    def _run(self, input_path: str, out: str = ".semantic-index") -> tuple[int, str, str]:
+        buf_stdout = io.StringIO()
+        buf_stderr = io.StringIO()
+        old_stdout, old_stderr = sys.stdout, sys.stderr
+        sys.stdout = buf_stdout
+        sys.stderr = buf_stderr
+        try:
+            args = _make_build_args(input_path, out)
+            exit_code = cli.handle_build(args, embedder=self.embedder)
+        finally:
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
+        return exit_code, buf_stdout.getvalue(), buf_stderr.getvalue()
+
+    def test_build_write_failure_returns_error(self) -> None:
+        md = self._touch("note.md")
+        readonly = self.root / "readonly"
+        readonly.mkdir()
+        readonly.chmod(0o444)
+        try:
+            exit_code, out, err = self._run(str(md), str(readonly / "index"))
+            self.assertEqual(exit_code, 1)
+            self.assertIn("Error:", err)
+        finally:
+            readonly.chmod(0o755)
+
+    def test_build_unicode_decode_error_returns_error(self) -> None:
+        bad = self.root / "bad.md"
+        bad.write_bytes(b"\xff\xfe\x00\xff")
+        exit_code, out, err = self._run(str(bad))
+        self.assertEqual(exit_code, 1)
+        self.assertIn("Error reading", err)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -236,6 +236,46 @@ class LoadIndexTests(unittest.TestCase):
             load_index(self.index_dir)
 
 
+# ---------------------------------------------------------------------------
+#  Corrupt / malformed index tests
+# ---------------------------------------------------------------------------
+
+
+class CorruptIndexTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.index_dir = Path(self._tmp.name)
+
+    def tearDown(self) -> None:
+        self._tmp.cleanup()
+
+    def test_load_index_corrupt_npz_raises(self) -> None:
+        _save_index(
+            self.index_dir,
+            [{"id": "c0", "text": "A", "path": "/a.md", "title": "A", "heading": None, "chunk_index": 0}],
+            np.array([[1.0, 0.0]], dtype=np.float32),
+        )
+        (self.index_dir / "index.npz").write_bytes(b"not a valid npz file")
+        with self.assertRaises(ValueError):
+            load_index(self.index_dir)
+
+    def test_load_index_missing_embeddings_key_raises(self) -> None:
+        np.savez_compressed(self.index_dir / "index.npz", wrong_key=np.array([1.0]))
+        with (self.index_dir / "docs.jsonl").open("w", encoding="utf-8") as f:
+            f.write(json.dumps({"id": "c0", "text": "A", "path": "/a.md", "title": "A", "heading": None, "chunk_index": 0}) + "\n")
+        with self.assertRaises(ValueError) as ctx:
+            load_index(self.index_dir)
+        self.assertIn("missing 'embeddings' key", str(ctx.exception))
+
+    def test_load_index_malformed_jsonl_raises(self) -> None:
+        np.savez_compressed(self.index_dir / "index.npz", embeddings=np.array([[1.0, 0.0]], dtype=np.float32))
+        with (self.index_dir / "docs.jsonl").open("w", encoding="utf-8") as f:
+            f.write("{invalid json\n")
+        with self.assertRaises(ValueError) as ctx:
+            load_index(self.index_dir)
+        self.assertIn("Malformed", str(ctx.exception))
+
+
 class SearchIndexTests(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp_dir = tempfile.TemporaryDirectory()

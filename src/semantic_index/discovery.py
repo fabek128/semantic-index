@@ -78,7 +78,13 @@ def discover_markdown(
 
 
 def _walk_dir(path: Path, exclude_dirs: frozenset[str]) -> list[Path]:
-    """Recursively walk a directory, skipping excluded dirs and symlinks."""
+    """Recursively walk a directory, skipping excluded dirs, symlinks,
+    and unreadable (PermissionError) subdirectories.
+
+    Unreadable subdirectories are **silently skipped** — no warning is
+    emitted because ``semantic-index`` avoids logging and aims for
+    minimal noise during indexing.
+    """
     found: list[Path] = []
     try:
         for entry in path.iterdir():

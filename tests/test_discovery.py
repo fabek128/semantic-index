@@ -152,3 +152,15 @@ class DiscoverMarkdownTests(unittest.TestCase):
                 discover_markdown(unreadable)
         finally:
             unreadable.chmod(0o755)
+
+    def test_discover_nested_unreadable_subdirectory_skipped(self) -> None:
+        self._touch("keep.md")
+        unreadable = self._mkdir("nested", "unreadable")
+        (unreadable / "secret.md").write_text("# secret", encoding="utf-8")
+        unreadable.chmod(0o000)
+        try:
+            result = discover_markdown(self.root)
+            self.assertIn((self.root / "keep.md").resolve(), result)
+            self.assertEqual(len(result), 1)
+        finally:
+            unreadable.chmod(0o755)
