@@ -47,6 +47,13 @@ Minimum metadata per chunk:
 }
 ```
 
+The three index files are written to a temporary subdirectory first and
+renamed into place one by one. If any write fails before the renames
+start, the original index is untouched. However, this is **not** a fully
+transactional multi-file commit — a crash between consecutive
+`replace()` calls can leave the files out of sync. `load_index` detects
+these inconsistent states and raises a clear error requesting a rebuild.
+
 Security notes:
 
 - Do not follow symlinks by default until an explicit policy is defined.
@@ -86,14 +93,15 @@ semantic-index search "query text" --index .semantic-index --top-k 5
 
 Responsibilities:
 
-1. Load and validate `manifest.json` (schema version, embedding dimensions).
+1. Load and validate `manifest.json` (schema version, embedding dimensions, chunk count).
 2. Load `docs.jsonl`.
-3. Load `index.npz`.
-4. Generate a local embedding for the query.
-4. Normalize the query.
-5. Compute dot products with `numpy`.
-6. Sort results by descending score.
-7. Print results in the requested format.
+3. Load `index.npz` and validate embedding matrix is 2D float.
+4. Validate consistency: chunk count, embedding dimensions, row counts.
+5. Generate a local embedding for the query.
+6. Normalize the query.
+7. Compute dot products with `numpy`.
+8. Sort results by descending score.
+9. Print results in the requested format.
 
 Output formats:
 
