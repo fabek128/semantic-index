@@ -56,7 +56,13 @@ semantic-index build ./notes --out ./my-index
 
 The build command validates paths, skips common generated directories (`.git`,
 `.venv`, `.semantic-index`, `.embeddings`, `__pycache__`), ignores symlinks,
-chunks each file, generates local embeddings, and writes the index.
+chunks each file, generates local embeddings, and writes the index atomically.
+
+If the output directory already contains an index (`manifest.json`,
+`docs.jsonl`, or `index.npz`), the build command overwrites those files
+and prints a list of overwritten files. The overwrite is **atomic** —
+files are written to a temporary subdirectory first and renamed into
+place, so a failed build does not leave a corrupt partial index.
 
 ### Index output
 

@@ -232,6 +232,31 @@ class CliBuildTests(unittest.TestCase):
             n_chunks = sum(1 for _ in f)
         self.assertEqual(embeddings.shape[0], n_chunks)
 
+    def test_build_overwrite_existing_index(self) -> None:
+        self._touch("note.md")
+        out_dir = self.root / "out"
+
+        # First build
+        exit_code, out, err = self._run(str(self.root), str(out_dir))
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Index built in:", out)
+
+        # Second build — overwrite
+        exit_code, out, err = self._run(str(self.root), str(out_dir))
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Index overwritten in:", out)
+        self.assertIn("Overwritten files:", out)
+        self.assertIn("manifest.json", out)
+        self.assertIn("docs.jsonl", out)
+        self.assertIn("index.npz", out)
+
+        # Index should still be readable
+        from semantic_index.indexer import load_manifest
+        manifest = load_manifest(out_dir)
+        self.assertGreater(manifest["chunk_count"], 0)
+        # Two sections in one file = 2 chunks
+        self.assertEqual(manifest["chunk_count"], 2)
+
 
 class CliSearchTests(unittest.TestCase):
     def setUp(self) -> None:

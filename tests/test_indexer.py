@@ -211,6 +211,29 @@ class SaveIndexTests(unittest.TestCase):
         with (old_dir / "docs.jsonl").open("r", encoding="utf-8") as f:
             self.assertEqual(json.loads(f.readline())["id"], "c0")
 
+    def test_save_index_cleans_up_temp_on_failure(self) -> None:
+        """If writing fails, temp dir is removed and original intact."""
+        out_dir = self.output / "safe"
+        out_dir.mkdir()
+        original = {"id": "original", "text": "keep"}
+        with (out_dir / "docs.jsonl").open("w", encoding="utf-8") as f:
+            f.write(json.dumps(original) + "\n")
+
+        # Inject a failure by creating a directory with the same name as
+        # one of the target files so the atomic rename fails.
+        (out_dir / "index.npz").mkdir()
+
+        with self.assertRaises(OSError):
+            _save_index(out_dir, self.chunks, self.embeddings)
+
+        # Original files should still be intact
+        with (out_dir / "docs.jsonl").open("r", encoding="utf-8") as f:
+            self.assertEqual(json.loads(f.readline())["id"], "original")
+
+        # No temp directories should remain
+        temps = [p for p in out_dir.iterdir() if p.name.startswith(".tmp_")]
+        self.assertEqual(len(temps), 0)
+
 
 # ---------------------------------------------------------------------------
 #  Search tests

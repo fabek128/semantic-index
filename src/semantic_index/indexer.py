@@ -7,6 +7,8 @@ chunked Markdown content using a pluggable embedder.
 from __future__ import annotations
 
 import json
+import os
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Protocol
@@ -92,25 +94,43 @@ def _save_index(
     source_dirs: list[str] | None = None,
     max_chars: int = 1800,
 ) -> None:
-    """Persist chunk metadata and embeddings to *output_dir*."""
+    """Persist chunk metadata and embeddings to *output_dir* atomically.
+
+    Files are written to a temporary subdirectory first and then renamed
+    into place.  If any write fails, the temporary directory is removed
+    and the original index (if any) is left untouched.
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    np.savez_compressed(output_dir / "index.npz", embeddings=embeddings)
+    tmp_tag = f".tmp_{os.urandom(4).hex()}"
+    tmp_dir = output_dir / tmp_tag
+    tmp_dir.mkdir()
 
-    docs_path = output_dir / "docs.jsonl"
-    with docs_path.open("w", encoding="utf-8") as f:
-        for chunk in chunks:
-            f.write(json.dumps(chunk, ensure_ascii=False) + "\n")
+    try:
+        np.savez_compressed(tmp_dir / "index.npz", embeddings=embeddings)
 
-    _save_manifest(
-        output_dir,
-        model_name=model_name,
-        model_dimensions=embeddings.shape[1],
-        chunk_count=len(chunks),
-        file_count=file_count,
-        source_dirs=source_dirs,
-        max_chars=max_chars,
-    )
+        with (tmp_dir / "docs.jsonl").open("w", encoding="utf-8") as f:
+            for chunk in chunks:
+                f.write(json.dumps(chunk, ensure_ascii=False) + "\n")
+
+        _save_manifest(
+            tmp_dir,
+            model_name=model_name,
+            model_dimensions=embeddings.shape[1],
+            chunk_count=len(chunks),
+            file_count=file_count,
+            source_dirs=source_dirs,
+            max_chars=max_chars,
+        )
+
+        # Atomic rename into place
+        for name in ("index.npz", "docs.jsonl", "manifest.json"):
+            (tmp_dir / name).replace(output_dir / name)
+    except BaseException:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        raise
+
+    shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 def _save_manifest(

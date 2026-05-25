@@ -158,6 +158,12 @@ def handle_build(args: argparse.Namespace, embedder=None) -> int:
     # Collect source directories for the manifest
     source_dirs = sorted({str(p.parent) for p in files}) if files else None
 
+    # Check for existing index
+    existing_files = []
+    for name in ("manifest.json", "docs.jsonl", "index.npz"):
+        if (output_dir / name).exists():
+            existing_files.append(name)
+
     # Build and persist the index
     try:
         build_index(
@@ -175,7 +181,11 @@ def handle_build(args: argparse.Namespace, embedder=None) -> int:
         print(f"Error: cannot write to {output_dir} — {exc}", file=sys.stderr)
         return 1
 
-    print(f"Index built in: {output_dir.resolve()}")
+    if existing_files:
+        print(f"Index overwritten in: {output_dir.resolve()}")
+        print(f"  Overwritten files: {', '.join(existing_files)}")
+    else:
+        print(f"Index built in: {output_dir.resolve()}")
     print(f"  Files discovered: {len(files)}")
     print(f"  Chunks indexed:   {len(all_chunks)}")
     return 0
