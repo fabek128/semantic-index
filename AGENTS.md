@@ -34,7 +34,7 @@ Implemented:
 
 Not implemented yet:
 
-- Hybrid lexical/BM25 search.
+- BM25-specific lexical ranking.
 - Index merge / incremental indexing.
 - FAISS or ANN acceleration.
 
@@ -58,6 +58,7 @@ Not implemented yet:
 ## GitHub workflow and planning
 
 Current development stage: **pre-alpha**.
+Current execution milestone: `v0.12.0-alpha-candidate: Executable package and alpha readiness`.
 
 Use the simplest GitHub workflow for this project:
 
@@ -111,9 +112,10 @@ Milestone roadmap:
 | `v0.6.0-pre-alpha: Index metadata and lifecycle` | Complete: manifest metadata, compatibility checks, and safe overwrite behavior. | #15, #16 |
 | `v0.7.0-pre-alpha: Retrieval quality and agent context controls` | Complete: model/prefix policy and bounded agent output. | #17, #18 |
 | `v0.8.0-pre-alpha: Pre-alpha release readiness` | Complete: versioning, changelog, release checklist, and security review checklist. | #19 |
-| `v0.9.0-pre-alpha: Quality automation and docs correctness` | Add CI/checks, remove test warning noise, fix docs, make NumPy loading pickle-safe, and harden index consistency validation. | #28, #29, #30, #31, #38 |
-| `v0.10.0-pre-alpha: Privacy, offline mode, and configuration` | Reduce path leakage, define offline/model-cache behavior, and expose minimal safe config. | #32, #33, #34 |
-| `v0.11.0-pre-alpha: Retrieval quality evaluation and hybrid search` | Add lexical/hybrid retrieval and deterministic quality fixtures. | #35, #36, #37 |
+| `v0.9.0-pre-alpha: Quality automation and docs correctness` | Complete: CI, test warning cleanup, docs fixes, pickle safety, and consistency validation. | #28, #29, #30, #31, #38 |
+| `v0.10.0-pre-alpha: Privacy, offline mode, and configuration` | Complete: relative paths, offline/cache docs, and minimal safe CLI config. | #32, #33, #34 |
+| `v0.11.0-pre-alpha: Retrieval quality evaluation and hybrid search` | Complete: lexical search, hybrid ranking, and deterministic retrieval fixtures. | #35, #36, #37 |
+| `v0.12.0-alpha-candidate: Executable package and alpha readiness` | Fix post-v0.11 regression, align docs/specs, validate artifacts, normalize alpha versioning, and add alpha smoke flow. | #46, #47, #48, #49, #50 |
 
 Detailed roadmap lives in `docs/roadmap.md`.
 

@@ -48,8 +48,9 @@ class LexicalScoreTests(unittest.TestCase):
         scores = score_query("python error", _CHUNKS)
         # c1 has "python" in text (term 1/2 = 0.5)
         self.assertEqual(scores[1], 0.5)
-        # c3 has no term match ("error" not in text, "errors" in heading but not exact)
-        self.assertEqual(scores[3], 0.0)
+        # c3 text contains "Error code..." — "error" matches via
+        # case-insensitive tokenization (1/2 = 0.5)
+        self.assertAlmostEqual(scores[3], 0.5)
 
     def test_empty_query(self) -> None:
         scores = score_query("", _CHUNKS)
