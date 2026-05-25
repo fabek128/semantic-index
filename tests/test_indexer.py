@@ -435,7 +435,7 @@ class SearchIndexTests(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             search_index(missing, "query", self.embedder)
 
-    def test_search_query_prefix_applied(self) -> None:
+    def test_search_default_prefix_empty(self) -> None:
         class PrefixCapture(FakeEmbedder):
             def __init__(self) -> None:
                 super().__init__(dims=4)
@@ -450,8 +450,24 @@ class SearchIndexTests(unittest.TestCase):
 
         self.assertIsNotNone(capture.last_texts)
         text = capture.last_texts[0]
-        self.assertTrue(text.startswith(DEFAULT_QUERY_PREFIX))
-        self.assertIn("my query", text)
+        self.assertEqual(text, "my query")
+
+    def test_search_explicit_query_prefix(self) -> None:
+        class PrefixCapture(FakeEmbedder):
+            def __init__(self) -> None:
+                super().__init__(dims=4)
+                self.last_texts: list[str] | None = None
+
+            def embed(self, texts: list[str]) -> np.ndarray:
+                self.last_texts = texts
+                return super().embed(texts)
+
+        capture = PrefixCapture()
+        search_index(self.index_dir, "my query", capture, top_k=1, query_prefix="query: ")
+
+        self.assertIsNotNone(capture.last_texts)
+        text = capture.last_texts[0]
+        self.assertEqual(text, "query: my query")
 
     def test_search_read_only_does_not_modify(self) -> None:
         before_mtime = (self.index_dir / "docs.jsonl").stat().st_mtime
