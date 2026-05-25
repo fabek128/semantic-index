@@ -106,6 +106,52 @@ python -m unittest discover
 
 The test suite covers CLI entrypoints, Markdown discovery, chunking, index building, and search.
 
+### Setting up a clean development environment
+
+From the repository root, create a fresh virtual environment and install:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install -e .
+```
+
+### Smoke-test checklist
+
+After a clean install, verify the CLI works and the tests pass:
+
+```bash
+# 1. Help and version
+semantic-index --help
+semantic-index version
+
+# 2. Discover a small notes directory
+mkdir -p /tmp/smoke-test
+echo '# Hello' > /tmp/smoke-test/welcome.md
+echo '## Section' >> /tmp/smoke-test/welcome.md
+echo 'World.' >> /tmp/smoke-test/welcome.md
+semantic-index build /tmp/smoke-test --out /tmp/smoke-index
+
+# 3. Search the index
+semantic-index search "hello" --index /tmp/smoke-index
+
+# 4. Test search output formats
+semantic-index search "hello" --index /tmp/smoke-index --format json
+semantic-index search "hello" --index /tmp/smoke-index --format jsonl
+
+# 5. Clean up
+rm -rf /tmp/smoke-test /tmp/smoke-index
+
+# 6. Run unit tests
+python -m unittest discover
+
+# 7. Verify no regressions in code quality
+python -m compileall -q src
+```
+
+> **Note on model caching**: The first `semantic-index build` call downloads the default embedding model (`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`) and caches it locally via `fastembed`. This is a one-time download; subsequent runs use the cached model. No data is sent to external services.
+
 ## Project structure
 
 ```text
