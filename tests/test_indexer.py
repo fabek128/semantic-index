@@ -17,12 +17,15 @@ SRC_DIR = REPO_ROOT / "src"
 sys.path.insert(0, str(SRC_DIR))
 
 
+from semantic_index import __version__  # noqa: E402
 from semantic_index.indexer import (  # noqa: E402
     DEFAULT_QUERY_PREFIX,
+    MANIFEST_SCHEMA_VERSION,
     _normalize,
     _save_index,
     build_index,
     load_index,
+    load_manifest,
     search_index,
 )
 
@@ -125,6 +128,35 @@ class BuildIndexTests(unittest.TestCase):
             ids = [json.loads(line)["id"] for line in f]
 
         self.assertEqual(ids, ["chunk_0", "chunk_1", "chunk_2"])
+
+    def test_build_index_creates_manifest(self) -> None:
+        build_index(self.chunks, self.output, self.embedder)
+
+        self.assertTrue((self.output / "manifest.json").exists())
+
+    def test_build_manifest_fields(self) -> None:
+        build_index(self.chunks, self.output, self.embedder)
+
+        manifest = load_manifest(self.output)
+        self.assertEqual(manifest["schema_version"], MANIFEST_SCHEMA_VERSION)
+        self.assertEqual(manifest["package_version"], __version__)
+        self.assertIsNone(manifest["model_name"])
+        self.assertEqual(manifest["embedding_dimensions"], 4)
+        self.assertEqual(manifest["chunk_count"], 3)
+        self.assertIn("created_at", manifest)
+
+    def test_build_manifest_with_model_name(self) -> None:
+        build_index(
+            self.chunks, self.output, self.embedder,
+            model_name="test-model",
+            file_count=2,
+            source_dirs=["/a"],
+        )
+
+        manifest = load_manifest(self.output)
+        self.assertEqual(manifest["model_name"], "test-model")
+        self.assertEqual(manifest["source"]["file_count"], 2)
+        self.assertEqual(manifest["source"]["directories"], ["/a"])
 
 
 class NormalizeTests(unittest.TestCase):
@@ -249,6 +281,11 @@ class CorruptIndexTests(unittest.TestCase):
     def tearDown(self) -> None:
         self._tmp.cleanup()
 
+    def _write_manifest(self) -> None:
+        """Write a valid manifest so manual file tests can be loaded."""
+        from semantic_index.indexer import _save_manifest
+        _save_manifest(self.index_dir, model_dimensions=2, chunk_count=1)
+
     def test_load_index_corrupt_npz_raises(self) -> None:
         _save_index(
             self.index_dir,
@@ -263,6 +300,7 @@ class CorruptIndexTests(unittest.TestCase):
         np.savez_compressed(self.index_dir / "index.npz", wrong_key=np.array([1.0]))
         with (self.index_dir / "docs.jsonl").open("w", encoding="utf-8") as f:
             f.write(json.dumps({"id": "c0", "text": "A", "path": "/a.md", "title": "A", "heading": None, "chunk_index": 0}) + "\n")
+        self._write_manifest()
         with self.assertRaises(ValueError) as ctx:
             load_index(self.index_dir)
         self.assertIn("missing 'embeddings' key", str(ctx.exception))
@@ -271,9 +309,54 @@ class CorruptIndexTests(unittest.TestCase):
         np.savez_compressed(self.index_dir / "index.npz", embeddings=np.array([[1.0, 0.0]], dtype=np.float32))
         with (self.index_dir / "docs.jsonl").open("w", encoding="utf-8") as f:
             f.write("{invalid json\n")
+        self._write_manifest()
         with self.assertRaises(ValueError) as ctx:
             load_index(self.index_dir)
         self.assertIn("Malformed", str(ctx.exception))
+
+
+# ---------------------------------------------------------------------------
+#  Manifest tests
+# ---------------------------------------------------------------------------
+
+
+class ManifestValidationTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.index_dir = Path(self._tmp.name)
+
+    def tearDown(self) -> None:
+        self._tmp.cleanup()
+
+    def test_load_manifest_missing_raises(self) -> None:
+        with self.assertRaises(FileNotFoundError):
+            load_manifest(self.index_dir)
+
+    def test_load_index_missing_manifest_raises(self) -> None:
+        # Create docs.jsonl and index.npz without manifest
+        np.savez_compressed(self.index_dir / "index.npz", embeddings=np.array([[1.0, 0.0]], dtype=np.float32))
+        with (self.index_dir / "docs.jsonl").open("w", encoding="utf-8") as f:
+            f.write('{"id": "c0", "text": "A"}\n')
+        with self.assertRaises(FileNotFoundError):
+            load_index(self.index_dir)
+
+    def test_load_manifest_malformed_json_raises(self) -> None:
+        (self.index_dir / "manifest.json").write_text("{bad json\n", encoding="utf-8")
+        with self.assertRaises(ValueError) as ctx:
+            load_manifest(self.index_dir)
+        self.assertIn("Malformed", str(ctx.exception))
+
+    def test_load_manifest_unsupported_schema_version(self) -> None:
+        from semantic_index.indexer import _save_manifest
+        _save_manifest(self.index_dir, chunk_count=1)
+        manifest_path = self.index_dir / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["schema_version"] = 999
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        with self.assertRaises(ValueError) as ctx:
+            load_manifest(self.index_dir)
+        self.assertIn("999", str(ctx.exception))
+        self.assertIn(str(MANIFEST_SCHEMA_VERSION), str(ctx.exception))
 
 
 class SearchIndexTests(unittest.TestCase):
@@ -353,3 +436,11 @@ class SearchIndexTests(unittest.TestCase):
         after_mtime = (self.index_dir / "docs.jsonl").stat().st_mtime
 
         self.assertEqual(before_mtime, after_mtime)
+
+    def test_search_embedder_dimension_mismatch_raises(self) -> None:
+        wrong_embedder = FakeEmbedder(dims=8)
+        with self.assertRaises(ValueError) as ctx:
+            search_index(self.index_dir, "query", wrong_embedder, top_k=1)
+        self.assertIn("dimension", str(ctx.exception).lower())
+        self.assertIn("8", str(ctx.exception))
+        self.assertIn("4", str(ctx.exception))

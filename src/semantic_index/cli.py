@@ -152,9 +152,22 @@ def handle_build(args: argparse.Namespace, embedder=None) -> int:
 
     from semantic_index.indexer import build_index
 
+    # Determine model_name from embedder (protocol does not require it)
+    model_name: str | None = getattr(embedder, "model_name", None)
+
+    # Collect source directories for the manifest
+    source_dirs = sorted({str(p.parent) for p in files}) if files else None
+
     # Build and persist the index
     try:
-        build_index(all_chunks, output_dir, embedder)
+        build_index(
+            all_chunks,
+            output_dir,
+            embedder,
+            model_name=model_name,
+            file_count=len(files),
+            source_dirs=source_dirs,
+        )
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
