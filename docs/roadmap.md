@@ -12,107 +12,110 @@ The project already has the first end-to-end local MVP shape: Markdown discovery
 | `v0.2.0-pre-alpha: Markdown input pipeline` | Complete | Safe Markdown discovery and deterministic Markdown chunking. |
 | `v0.3.0-pre-alpha: Local embedding index` | Complete | Local embedding index build with `docs.jsonl` + `index.npz`. |
 | `v0.4.0-pre-alpha: Search and agent retrieval MVP` | Complete | Local semantic search with `text`, `json`, and `jsonl` output. |
-| `v0.5.0-pre-alpha: MVP hardening and release readiness` | Complete | CLI error hardening, packaging validation, and security baseline. |
+| `v0.5.0-pre-alpha: MVP hardening and release readiness` | Complete | CLI error hardening, packaging validation, test discovery fix, and docs alignment. |
 | `v0.6.0-pre-alpha: Index metadata and lifecycle` | Complete | Index manifest, compatibility validation, and safe overwrite behavior. |
 | `v0.7.0-pre-alpha: Retrieval quality and agent context controls` | Complete | Prefix policy alignment and bounded output controls. |
+| `v0.8.0-pre-alpha: Pre-alpha release readiness` | Complete | Versioning policy, changelog, release checklist, and security review checklist. |
 
 ## Current recommendation
 
 The next milestone should be:
 
 ```text
-v0.8.0-pre-alpha: Pre-alpha release readiness
+v0.9.0-pre-alpha: Quality automation and docs correctness
 ```
 
-Do **not** jump directly to FAISS, APIs, databases, web UI, or advanced indexing.
+Do **not** jump directly to FAISS, APIs, databases, web UI, or heavy indexing frameworks. The next step is to make the current pre-alpha MVP consistently verifiable, clean in CI, and accurately documented before adding retrieval features.
 
-## Planned phases
+Recommended execution order:
 
-### v0.5.0-pre-alpha: MVP hardening and release readiness
+1. #28 — clean ResourceWarning noise from tests.
+2. #30 — fix documentation inconsistencies found after v0.8.
+3. #31 — make NumPy index loading explicitly pickle-safe.
+4. #38 — harden multi-file index consistency validation.
+5. #29 — add minimal GitHub Actions checks once local tests are clean.
 
-Issues: #12, #13, #14, #20
+## Open phases
 
-Goal: make the current MVP safer, more consistent, and easier to validate.
+### v0.9.0-pre-alpha: Quality automation and docs correctness
 
-Focus:
+Issues: #28, #29, #30, #31, #38
 
-- documentation consistency;
-- CLI error handling;
-- corrupt/missing index validation;
-- nested permission/error handling;
-- clean-environment packaging checks;
-- release checklist for the current local-only CLI.
-
-Non-goals:
-
-- no FAISS;
-- no database;
-- no API/web server;
-- no incremental indexing yet.
-
-### v0.6.0-pre-alpha: Index metadata and lifecycle
-
-Issues: #15, #16
-
-Goal: make generated indexes self-describing and safer to rebuild/search later.
+Goal: make the repository consistently verifiable and clean after the first pre-alpha release-readiness pass.
 
 Focus:
 
-- `manifest.json` or equivalent metadata;
-- schema version;
-- embedding model name;
-- embedding dimensions;
-- chunking configuration;
-- creation timestamp and source summary;
-- search-time compatibility validation;
-- safe overwrite/rebuild behavior.
+- remove ResourceWarning noise from tests;
+- add minimal GitHub Actions checks;
+- correct post-v0.8 documentation inconsistencies;
+- make NumPy index loading explicitly pickle-safe;
+- harden multi-file index consistency validation.
+
+Known corrections captured in this milestone:
+
+- `python -m unittest discover` passes but emits `ResourceWarning` noise from temporary test files;
+- `docs/architecture.md` has malformed list numbering around build/search responsibilities;
+- README and roadmap contain stale wording from earlier phases;
+- security/offline wording must distinguish local note processing from first-run model download/cache behavior;
+- index loading should use `np.load(..., allow_pickle=False)` explicitly;
+- mixed or malformed multi-file indexes should fail with actionable validation errors.
 
 Non-goals:
 
-- no index merge;
-- no background watcher;
-- no database.
+- no deployment;
+- no PyPI publishing;
+- no new runtime service;
+- no large framework migration.
 
-### v0.7.0-pre-alpha: Retrieval quality and agent context controls
+### v0.10.0-pre-alpha: Privacy, offline mode, and configuration
 
-Issues: #17, #18
+Issues: #32, #33, #34
 
-Goal: improve result usefulness without changing the local-only architecture.
+Goal: reduce accidental local metadata exposure and make model/cache/configuration behavior explicit.
 
 Focus:
 
-- resolve embedding model/prefix policy;
-- stable result schemas for agents;
-- output limits and snippet controls;
-- optional context block formatting;
-- preparation for future lexical/hybrid search decisions.
+- avoid leaking absolute local paths in index metadata and search output by default;
+- define first-run model download/cache/offline behavior;
+- expose minimal safe build configuration such as chunk size and, if justified, model name.
+
+Known corrections captured in this milestone:
+
+- generated index metadata can expose absolute local paths;
+- offline expectations are not explicit enough for first-run model downloads;
+- the build command does not yet expose a safe `--max-chars` option even though chunking supports it internally.
 
 Non-goals:
 
-- no ANN engine;
-- no BM25 implementation unless explicitly scoped in a later issue;
-- no external service.
+- no encryption layer;
+- no secret scanner;
+- no external embedding API;
+- no global config file.
 
-### v0.8.0-pre-alpha: Pre-alpha release readiness
+### v0.11.0-pre-alpha: Retrieval quality evaluation and hybrid search
 
-Issues: #19
+Issues: #35, #36, #37
 
-Goal: prepare the project for a tagged pre-alpha release.
+Goal: improve technical-note retrieval quality without adding a database or external service.
 
 Focus:
 
-- versioning policy;
-- changelog;
-- clean install verification;
-- local smoke-test script or documented checklist;
-- packaging metadata review;
-- security/privacy review for generated indexes.
+- add local lexical search for exact identifiers and terms;
+- combine lexical and semantic signals in a simple hybrid mode;
+- add small deterministic retrieval fixtures and golden tests.
+
+Known limitations captured in this milestone:
+
+- semantic search alone is weak for exact identifiers, filenames, symbols, and error codes;
+- ranking changes need deterministic fixtures before hybrid retrieval grows;
+- retrieval improvements must preserve the CLI-first, local-only, database-free architecture.
 
 Non-goals:
 
-- no public hosting;
-- no online service;
-- no production deployment.
+- no SQLite/FTS database;
+- no FAISS/ANN engine;
+- no external benchmark dataset;
+- no network dependency.
 
 ## Issue policy
 

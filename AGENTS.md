@@ -12,6 +12,7 @@ The project is intentionally local-only and database-free.
 1. Read `README.md`.
 2. Read the relevant files in `docs/`.
 3. Keep changes small, explicit, and easy to review.
+4. When changing agent instructions, keep `AGENTS.md`, `.codex.md`, `CLAUDE.md`, and `OPENCODE.md` synchronized in the same change unless Fabian explicitly requests otherwise.
 
 ## Current scope
 
@@ -105,10 +106,13 @@ Milestone roadmap:
 | `v0.2.0-pre-alpha: Markdown input pipeline` | Complete: safe Markdown discovery and deterministic chunking. | #2, #3 |
 | `v0.3.0-pre-alpha: Local embedding index` | Complete: local embeddings and `docs.jsonl` + `index.npz` persistence. | #4 |
 | `v0.4.0-pre-alpha: Search and agent retrieval MVP` | Complete: local search and agent-friendly output formats. | #5 |
-| `v0.5.0-pre-alpha: MVP hardening and release readiness` | Harden docs, errors, packaging checks, and current MVP behavior before adding larger features. | #12, #13, #14, #20 |
-| `v0.6.0-pre-alpha: Index metadata and lifecycle` | Add self-describing index metadata, compatibility checks, and safe rebuild behavior. | #15, #16 |
-| `v0.7.0-pre-alpha: Retrieval quality and agent context controls` | Clarify embedding model/prefix policy and improve bounded agent context output. | #17, #18 |
-| `v0.8.0-pre-alpha: Pre-alpha release readiness` | Prepare versioning, changelog, clean install validation, and release checklist. | #19 |
+| `v0.5.0-pre-alpha: MVP hardening and release readiness` | Complete: docs, errors, packaging, test discovery, and release baseline. | #12, #13, #14, #20 |
+| `v0.6.0-pre-alpha: Index metadata and lifecycle` | Complete: manifest metadata, compatibility checks, and safe overwrite behavior. | #15, #16 |
+| `v0.7.0-pre-alpha: Retrieval quality and agent context controls` | Complete: model/prefix policy and bounded agent output. | #17, #18 |
+| `v0.8.0-pre-alpha: Pre-alpha release readiness` | Complete: versioning, changelog, release checklist, and security review checklist. | #19 |
+| `v0.9.0-pre-alpha: Quality automation and docs correctness` | Add CI/checks, remove test warning noise, fix docs, make NumPy loading pickle-safe, and harden index consistency validation. | #28, #29, #30, #31, #38 |
+| `v0.10.0-pre-alpha: Privacy, offline mode, and configuration` | Reduce path leakage, define offline/model-cache behavior, and expose minimal safe config. | #32, #33, #34 |
+| `v0.11.0-pre-alpha: Retrieval quality evaluation and hybrid search` | Add lexical/hybrid retrieval and deterministic quality fixtures. | #35, #36, #37 |
 
 Detailed roadmap lives in `docs/roadmap.md`.
 
