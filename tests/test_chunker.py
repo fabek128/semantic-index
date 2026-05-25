@@ -21,6 +21,7 @@ class ChunkerTests(unittest.TestCase):
         self._tmp = tempfile.NamedTemporaryFile(
             mode="w", suffix=".md", delete=False, encoding="utf-8"
         )
+        self._tmp.close()
         self.path = Path(self._tmp.name)
 
     def tearDown(self) -> None:
