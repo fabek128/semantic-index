@@ -289,11 +289,12 @@ class CliSearchTests(unittest.TestCase):
         self.assertIn("--index", out)
         self.assertIn("--top-k", out)
 
-    def _search(self, query: str, index: str | None = None, top_k: int = 5) -> tuple[int, str, str]:
+    def _search(self, query: str, index: str | None = None, top_k: int = 5, max_chars: int = 200) -> tuple[int, str, str]:
         args = argparse.Namespace()
         args.query = query
         args.index = index or str(self.index_dir)
         args.top_k = top_k
+        args.max_chars = max_chars
         args.format = "text"
         args.handler = cli.handle_search
 
@@ -310,12 +311,13 @@ class CliSearchTests(unittest.TestCase):
         return exit_code, buf_out.getvalue(), buf_err.getvalue()
 
     def _search_format(
-        self, query: str, fmt: str, index: str | None = None
+        self, query: str, fmt: str, index: str | None = None, max_chars: int = 200
     ) -> tuple[int, str, str]:
         args = argparse.Namespace()
         args.query = query
         args.index = index or str(self.index_dir)
         args.top_k = 5
+        args.max_chars = max_chars
         args.format = fmt
         args.handler = cli.handle_search
 
@@ -365,6 +367,35 @@ class CliSearchTests(unittest.TestCase):
         self.assertEqual(exit_code, 1)
         self.assertIn("Error:", err)
         self.assertIn("top-k", err.lower())
+
+    def test_search_invalid_max_chars(self) -> None:
+        exit_code, out, err = self._search("hello", max_chars=-1)
+        self.assertEqual(exit_code, 1)
+        self.assertIn("Error:", err)
+        self.assertIn("max-chars", err.lower())
+
+    def test_search_max_chars_truncates_text(self) -> None:
+        exit_code, out, err = self._search("hello", max_chars=5)
+        self.assertEqual(exit_code, 0)
+        # Text snippet should be at most 5 chars + no newline in snippet line
+        for line in out.splitlines():
+            if line.startswith("  "):
+                # This is a snippet line
+                self.assertLessEqual(len(line.strip()), 5)
+                self.assertNotIn("\n", line)
+
+    def test_search_max_chars_zero_is_no_limit(self) -> None:
+        exit_code, out, err = self._search("hello", max_chars=0)
+        self.assertEqual(exit_code, 0)
+        # Full text should appear (the texts in the test index have < 20 chars)
+        self.assertIn("Hello world", out)
+
+    def test_search_max_chars_applied_in_json(self) -> None:
+        exit_code, out, err = self._search_format("hello", "json", max_chars=3)
+        self.assertEqual(exit_code, 0)
+        results = json.loads(out)
+        for r in results:
+            self.assertLessEqual(len(r["text"]), 3)
 
     def test_search_corrupt_index_npz_returns_error(self) -> None:
         (self.index_dir / "index.npz").write_bytes(b"garbage")
