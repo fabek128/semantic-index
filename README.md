@@ -181,10 +181,8 @@ See details in [`docs/architecture.md`](docs/architecture.md).
 - It must not use `pickle` to load untrusted indexes.
 - Local indexes may contain sensitive text derived from notes; `.semantic-index/`, `.embeddings/`, `docs.jsonl`, and `index.npz` are ignored by Git by default.
 
-## Short roadmap
+## Roadmap
 
-1. Add a `build` command with basic path validation and `.md` discovery.
-2. Implement simple Markdown chunking by headings and approximate size.
-3. Add `fastembed` + `numpy` for embeddings and exact in-memory search.
-4. Persist the index as `docs.jsonl` + `index.npz`.
-5. Add agent-oriented output (`text`, `json`, `jsonl`) with explicit limits.
+The first local MVP shape is implemented: Markdown discovery, chunking, local embedding index persistence, and CLI search.
+
+Next phases focus on pre-alpha hardening, index metadata/lifecycle, retrieval quality, and release readiness. See [`docs/roadmap.md`](docs/roadmap.md).

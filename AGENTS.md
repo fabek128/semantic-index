@@ -101,11 +101,16 @@ Milestone roadmap:
 
 | Milestone | Purpose | Current issues |
 | --- | --- | --- |
-| `v0.1.0-pre-alpha: Foundation and test baseline` | Keep the existing CLI stable, add baseline unit tests, and document the development/test workflow. | #1 |
-| `v0.2.0-pre-alpha: Markdown input pipeline` | Add safe local Markdown discovery and deterministic chunking without embeddings or search. | #2, #3 |
-| `v0.3.0-pre-alpha: Local embedding index` | Generate local embeddings and persist `docs.jsonl` + `index.npz` without databases or external services for note contents. | #4 |
-| `v0.4.0-pre-alpha: Search and agent retrieval MVP` | Add local search, ranked output, and agent-friendly result formats. | #5 |
-| `v0.5.0-pre-alpha: MVP hardening and release readiness` | Improve packaging, docs, errors, security checks, and release readiness after search exists. | Future issues |
+| `v0.1.0-pre-alpha: Foundation and test baseline` | Complete: CLI scaffold and baseline tests. | #1 |
+| `v0.2.0-pre-alpha: Markdown input pipeline` | Complete: safe Markdown discovery and deterministic chunking. | #2, #3 |
+| `v0.3.0-pre-alpha: Local embedding index` | Complete: local embeddings and `docs.jsonl` + `index.npz` persistence. | #4 |
+| `v0.4.0-pre-alpha: Search and agent retrieval MVP` | Complete: local search and agent-friendly output formats. | #5 |
+| `v0.5.0-pre-alpha: MVP hardening and release readiness` | Harden docs, errors, packaging checks, and current MVP behavior before adding larger features. | #12, #13, #14, #20 |
+| `v0.6.0-pre-alpha: Index metadata and lifecycle` | Add self-describing index metadata, compatibility checks, and safe rebuild behavior. | #15, #16 |
+| `v0.7.0-pre-alpha: Retrieval quality and agent context controls` | Clarify embedding model/prefix policy and improve bounded agent context output. | #17, #18 |
+| `v0.8.0-pre-alpha: Pre-alpha release readiness` | Prepare versioning, changelog, clean install validation, and release checklist. | #19 |
+
+Detailed roadmap lives in `docs/roadmap.md`.
 
 ## Documentation and testing requirements
 
