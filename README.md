@@ -204,12 +204,94 @@ Future phases: hybrid search, index metadata and lifecycle, retrieval quality co
 
 See details in [`docs/architecture.md`](docs/architecture.md).
 
+## Versioning policy
+
+This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+During **`0.x` pre-alpha** development:
+
+- The **minor** version (`0.minor.patch`) is incremented for each feature
+  milestone (v0.1, v0.2, …).
+- The **patch** version (`0.x.patch`) is incremented for fixes, doc updates,
+  and smaller changes within a milestone.
+- There is **no API/ABI stability guarantee** until `1.0.0`.
+- Breaking changes bump the minor version, even in `0.x`.
+
+### Version bump checklist
+
+```bash
+# 1. Update src/semantic_index/__init__.py   (__version__)
+# 2. Update pyproject.toml                   (version)
+# 3. Add entry to CHANGELOG.md
+# 4. Run full validation (see Release checklist)
+# 5. Commit with message "Bump version to X.Y.Z"
+# 6. Tag: git tag -a vX.Y.Z -m "vX.Y.Z"
+# 7. Push: git push origin main --tags
+```
+
+## Release checklist
+
+Run these commands in a clean environment before tagging a release:
+
+```bash
+# 1. Clean install
+python3 -m venv /tmp/release-check
+source /tmp/release-check/bin/activate
+pip install --upgrade pip
+pip install -e .
+
+# 2. CLI validation
+semantic-index --help
+semantic-index version
+
+# 3. Build and search smoke test
+mkdir -p /tmp/release-notes
+echo '# Hello' > /tmp/release-notes/welcome.md
+echo '## Section' >> /tmp/release-notes/welcome.md
+echo 'World.' >> /tmp/release-notes/welcome.md
+semantic-index build /tmp/release-notes --out /tmp/release-idx
+semantic-index search "hello" --index /tmp/release-idx
+semantic-index search "hello" --index /tmp/release-idx --format json
+semantic-index search "hello" --index /tmp/release-idx --format jsonl
+semantic-index search "hello" --index /tmp/release-idx --max-chars 5
+rm -rf /tmp/release-notes /tmp/release-idx
+
+# 4. Unit tests
+python -m unittest discover
+
+# 5. Code quality
+python -m compileall -q src
+
+# 6. Cleanup
+deactivate
+rm -rf /tmp/release-check
+```
+
 ## Security and privacy
 
-- The tool must operate only on local files explicitly provided by the user.
+- The tool operates only on local files explicitly provided by the user.
 - It must not send notes, embeddings, or metadata to external services.
 - It must not use `pickle` to load untrusted indexes.
-- Local indexes may contain sensitive text derived from notes; `.semantic-index/`, `.embeddings/`, `docs.jsonl`, and `index.npz` are ignored by Git by default.
+- Local indexes may contain sensitive text derived from notes;
+  `.semantic-index/`, `.embeddings/`, `docs.jsonl`, `index.npz`,
+  and `manifest.json` are ignored by Git by default.
+
+### Security review checklist
+
+Before every release, verify:
+
+- [ ] No secrets, tokens, or credentials are committed or logged.
+- [ ] No network calls are made during build or search.
+- [ ] All user-facing errors go to stderr with no stack traces.
+- [ ] Symlinks are not followed during discovery.
+- [ ] Index files are written atomically (temp dir + rename).
+- [ ] Corrupt or missing index files produce actionable errors.
+- [ ] `pickle` is not used for index persistence.
+- [ ] `.gitignore` covers all generated artifacts.
+- [ ] Embedding model is downloaded and cached locally (no data sent externally).
+- [ ] Default model does not require `passage:` / `query:` prefixes.
+- [ ] `--top-k` and `--max-chars` bound output size.
+- [ ] Exit codes are non-zero on expected errors.
 
 ## Roadmap
 

@@ -12,26 +12,19 @@ The project already has the first end-to-end local MVP shape: Markdown discovery
 | `v0.2.0-pre-alpha: Markdown input pipeline` | Complete | Safe Markdown discovery and deterministic Markdown chunking. |
 | `v0.3.0-pre-alpha: Local embedding index` | Complete | Local embedding index build with `docs.jsonl` + `index.npz`. |
 | `v0.4.0-pre-alpha: Search and agent retrieval MVP` | Complete | Local semantic search with `text`, `json`, and `jsonl` output. |
+| `v0.5.0-pre-alpha: MVP hardening and release readiness` | Complete | CLI error hardening, packaging validation, and security baseline. |
+| `v0.6.0-pre-alpha: Index metadata and lifecycle` | Complete | Index manifest, compatibility validation, and safe overwrite behavior. |
+| `v0.7.0-pre-alpha: Retrieval quality and agent context controls` | Complete | Prefix policy alignment and bounded output controls. |
 
 ## Current recommendation
 
 The next milestone should be:
 
 ```text
-v0.5.0-pre-alpha: MVP hardening and release readiness
+v0.8.0-pre-alpha: Pre-alpha release readiness
 ```
 
-Do **not** jump directly to FAISS, APIs, databases, web UI, or advanced indexing. The current code should first be hardened, documented, and made easier to validate in clean environments.
-
-## Known corrections discovered after v0.4
-
-These should be tracked before expanding feature scope:
-
-1. Some docs still describe older scaffold behavior or future-only persistence even though build/search are implemented.
-2. The embedding model and prefix strategy need a clear decision. The original spec recommended E5-style `query:` / `passage:` prefixes, but the implemented default model is `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, which does not have the same E5 prefix contract.
-3. Index files do not yet include a manifest with schema version, model name, embedding dimensions, chunking parameters, or creation metadata.
-4. Some discovery/read error behavior should be made more explicit and consistently tested, especially nested unreadable directories and malformed/corrupt index files.
-5. The release workflow is not yet documented as a repeatable pre-alpha checklist.
+Do **not** jump directly to FAISS, APIs, databases, web UI, or advanced indexing.
 
 ## Planned phases
 
