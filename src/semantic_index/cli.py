@@ -57,6 +57,18 @@ def build_parser() -> argparse.ArgumentParser:
         default=".semantic-index",
         help="output directory for index data (default: .semantic-index)",
     )
+    build_parser_inst.add_argument(
+        "--max-chars",
+        type=int,
+        default=1800,
+        help="maximum characters per Markdown chunk (default: 1800)",
+    )
+    build_parser_inst.add_argument(
+        "--model",
+        type=str,
+        default=None,
+        help="embedding model name (default: built-in multilingual MiniLM)",
+    )
     build_parser_inst.set_defaults(handler=handle_build)
 
     search_parser = subcommands.add_parser(
@@ -108,6 +120,14 @@ def handle_version(_args: argparse.Namespace) -> int:
 def handle_build(args: argparse.Namespace, embedder=None) -> int:
     input_path = Path(args.input_path)
     output_dir = Path(args.out)
+    max_chars = args.max_chars
+    model_name_arg: str | None = args.model
+
+    if max_chars < 1:
+        print("Error: --max-chars must be >= 1", file=sys.stderr)
+        return 1
+
+    root_dir = (input_path.parent if input_path.is_file() else input_path).resolve()
 
     try:
         files = discover_markdown(input_path)
@@ -129,11 +149,14 @@ def handle_build(args: argparse.Namespace, embedder=None) -> int:
     all_chunks: list[dict] = []
     for md_file in files:
         try:
-            chunks = chunk_markdown(md_file)
+            chunks = chunk_markdown(md_file, max_chars=max_chars, root_dir=root_dir)
         except UnicodeDecodeError as exc:
             print(f"Error reading {md_file}: {exc}", file=sys.stderr)
             return 1
         except FileNotFoundError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 1
+        except ValueError as exc:
             print(f"Error: {exc}", file=sys.stderr)
             return 1
         all_chunks.extend(chunks)
@@ -147,7 +170,7 @@ def handle_build(args: argparse.Namespace, embedder=None) -> int:
         try:
             from semantic_index.indexer import FastEmbedEmbedder
 
-            embedder = FastEmbedEmbedder()
+            embedder = FastEmbedEmbedder(model_name=model_name_arg)
         except ImportError as exc:
             print(
                 f"Error: missing dependency — {exc}. "
@@ -161,8 +184,15 @@ def handle_build(args: argparse.Namespace, embedder=None) -> int:
     # Determine model_name from embedder (protocol does not require it)
     model_name: str | None = getattr(embedder, "model_name", None)
 
-    # Collect source directories for the manifest
-    source_dirs = sorted({str(p.parent) for p in files}) if files else None
+    # Collect source directories for the manifest (relative to root)
+    source_dirs_raw = sorted({p.parent for p in files}) if files else []
+    try:
+        source_dirs = [
+            str(d.relative_to(root_dir)) if d != root_dir else "."
+            for d in source_dirs_raw
+        ]
+    except ValueError:
+        source_dirs = [str(d) for d in source_dirs_raw]
 
     # Check for existing index
     existing_files = []
@@ -179,6 +209,7 @@ def handle_build(args: argparse.Namespace, embedder=None) -> int:
             model_name=model_name,
             file_count=len(files),
             source_dirs=source_dirs,
+            max_chars=max_chars,
         )
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)

@@ -59,6 +59,13 @@ The build command validates paths, skips common generated directories (`.git`,
 `.venv`, `.semantic-index`, `.embeddings`, `__pycache__`), ignores symlinks,
 chunks each file, generates local embeddings, and writes the index atomically.
 
+Options:
+
+- `--max-chars` (default 1800): maximum characters per Markdown chunk.
+- `--model` (default: built-in multilingual MiniLM): embedding model name
+  from Hugging Face. The model is downloaded on first use and cached locally.
+- `--out` (default `.semantic-index`): output directory for the index.
+
 If the output directory already contains an index (`manifest.json`,
 `docs.jsonl`, or `index.npz`), the build command overwrites those files
 and prints a list of overwritten files. The overwrite is **atomic** —
@@ -107,7 +114,7 @@ returns one JSON object per line. Each object has the following fields:
 |-------|------|-------------|
 | `score` | float | Cosine similarity score (0–1) |
 | `id` | str | Deterministic chunk identifier |
-| `path` | str | Source Markdown file path |
+| `path` | str | Source Markdown file path (relative to the discovery root by default) |
 | `title` | str or null | Document title (first `#` heading or filename stem) |
 | `heading` | str or null | Current section heading |
 | `chunk_index` | int | Chunk index within the source file |
@@ -325,6 +332,24 @@ Before every release, verify:
 - [ ] Embedding model is downloaded and cached locally (no data sent externally).
 - [ ] Default model does not require `passage:` / `query:` prefixes.
 - [ ] `--top-k` and `--max-chars` bound output size.
+
+### Offline use and model caching
+
+The build command generates embeddings locally and **never sends note content
+to external services**.
+
+The first call to `semantic-index build` downloads the default embedding model
+from Hugging Face and caches it in ``~/.cache/fastembed/``.  This is a **one-time
+download**; subsequent builds use the local cache.  To prepare a machine for
+fully offline use:
+
+1. Run ``semantic-index build`` once with a network connection so the model
+   is cached.
+2. Subsequent builds in offline mode use the cached model automatically.
+
+If the model is not cached and no network is available, ``fastembed`` raises
+an error.  The error message includes the model name and suggests checking
+the network connection or pre-caching the model.
 - [ ] Exit codes are non-zero on expected errors.
 
 ## Roadmap

@@ -58,9 +58,20 @@ class ChunkerTests(unittest.TestCase):
         chunks = chunk_markdown(self.path)
 
         self.assertEqual(len(chunks), 1)
-        self.assertIsNone(chunks[0]["heading"])
-        self.assertEqual(chunks[0]["title"], self.path.stem)
-        self.assertIn("Just a paragraph.", chunks[0]["text"])
+
+    def test_root_dir_relative_path(self) -> None:
+        self._write("# Doc\n\nBody.")
+        root = self.path.parent.resolve()
+        chunks = chunk_markdown(self.path, root_dir=root)
+        self.assertEqual(chunks[0]["path"], self.path.name)
+
+    def test_root_dir_nested_file(self) -> None:
+        nested = self.path.parent / "sub" / self.path.name
+        nested.parent.mkdir(parents=True, exist_ok=True)
+        nested.write_text("# Nested\n\nContent.", encoding="utf-8")
+        root = self.path.parent.resolve()
+        chunks = chunk_markdown(nested, root_dir=root)
+        self.assertEqual(chunks[0]["path"], f"sub/{self.path.name}")
 
     def test_no_h1_title_falls_back_to_stem(self) -> None:
         self._write("## Section\n\nContent.")

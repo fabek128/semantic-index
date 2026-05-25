@@ -19,6 +19,13 @@ This document describes the architecture for `semantic-index`. The build command
 semantic-index build ./notes --out .semantic-index
 ```
 
+Current CLI options for the build command:
+
+- `input_path`: path to a Markdown file or directory.
+- `--out` (default `.semantic-index`): output directory for index data.
+- `--max-chars` (default 1800): maximum characters per chunk.
+- `--model` (default: built-in multilingual MiniLM): embedding model name.
+
 Current responsibilities:
 
 1. Validate that the input path exists and is local.
@@ -26,13 +33,18 @@ Current responsibilities:
 3. Skip common generated/hidden directories (`.git`, `.venv`, `.semantic-index`, `.embeddings`, `__pycache__`, `node_modules`).
 4. Do not follow symlinks.
 5. Read each file as UTF-8.
-6. Convert each document into Markdown chunks.
-7. Generate local embeddings with `fastembed`.
+6. Convert each document into Markdown chunks (respecting ``--max-chars``).
+7. Generate local embeddings via ``fastembed`` (using ``--model`` if provided).
  8. Normalize vectors for cosine similarity via dot product.
  9. Save:
     - `.semantic-index/manifest.json`: self-describing index metadata.
     - `.semantic-index/docs.jsonl`: chunk text and metadata.
     - `.semantic-index/index.npz`: normalized `float32` embedding matrix.
+
+Paths stored in chunk metadata are relative to the discovery root by default.
+For a single-file build the root is the parent directory; for a directory build
+the root is the directory itself. This prevents leaking absolute paths when
+search results are printed or indexes are shared.
 
 Minimum metadata per chunk:
 
@@ -60,6 +72,7 @@ Security notes:
 - Do not write outside the `--out` directory provided by the user.
 - Do not include secrets in logs.
 - Treat `manifest.json`, `docs.jsonl`, and `index.npz` as sensitive data because they are derived from private notes.
+- Chunk paths are stored relative to the discovery root to reduce absolute path leakage.
 
 ### 2. Markdown chunking (implemented — used by the build command)
 
