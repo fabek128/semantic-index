@@ -11,6 +11,7 @@ ATX_HEADING_RE = "#"  # simple prefix check for speed
 def chunk_markdown(
     path: Path,
     max_chars: int = 1800,
+    root_dir: Path | None = None,
 ) -> list[dict]:
     """Split a Markdown file into metadata-rich chunks.
 
@@ -20,6 +21,10 @@ def chunk_markdown(
         Path to the Markdown file.
     max_chars:
         Maximum approximate characters per chunk.
+    root_dir:
+        When provided, the ``path`` stored in each chunk is made relative
+        to *root_dir* to avoid leaking absolute paths.  If omitted, the
+        path is stored as-is.
 
     Returns
     -------
@@ -37,7 +42,15 @@ def chunk_markdown(
     lines = text.splitlines()
 
     title: str = _resolve_title(lines, path)
-    file_id = hashlib.md5(str(path.resolve()).encode()).hexdigest()[:12]
+    resolved = path.resolve()
+    file_id = hashlib.md5(str(resolved).encode()).hexdigest()[:12]
+
+    if root_dir is not None:
+        root_resolved = root_dir.resolve()
+        stored_path = resolved.relative_to(root_resolved)
+    else:
+        stored_path = path
+    stored_path_str = str(stored_path)
 
     chunks: list[dict] = []
     sections = _split_by_headings(lines)
@@ -52,7 +65,7 @@ def chunk_markdown(
             chunk_index = len(chunks)
             chunks.append({
                 "id": f"{file_id}_{chunk_index}",
-                "path": str(path),
+                "path": stored_path_str,
                 "title": title,
                 "heading": heading,
                 "chunk_index": chunk_index,

@@ -47,12 +47,16 @@ class FakeEmbedder:
 def _make_build_args(
     input_path: str,
     out: str = ".semantic-index",
+    max_chars: int = 1800,
+    model: str | None = None,
 ) -> argparse.Namespace:
     """Build a Namespace object for handle_build."""
     import argparse
     args = argparse.Namespace()
     args.input_path = input_path
     args.out = out
+    args.max_chars = max_chars
+    args.model = model
     return args
 
 
@@ -232,6 +236,26 @@ class CliBuildTests(unittest.TestCase):
             n_chunks = sum(1 for _ in f)
         self.assertEqual(embeddings.shape[0], n_chunks)
 
+    def test_build_stores_relative_path(self) -> None:
+        self._touch("sub/a.md")
+        out_dir = self.root / "out"
+        self._run(str(self.root), str(out_dir))
+        with (out_dir / "docs.jsonl").open("r", encoding="utf-8") as f:
+            chunks = [json.loads(line) for line in f]
+        for c in chunks:
+            self.assertFalse(c["path"].startswith("/"), f"path should be relative, got: {c['path']}")
+        paths = {c["path"] for c in chunks}
+        self.assertIn("sub/a.md", paths)
+
+    def test_build_single_file_relative_path(self) -> None:
+        md = self._touch("single.md")
+        out_dir = self.root / "out"
+        self._run(str(md), str(out_dir))
+        with (out_dir / "docs.jsonl").open("r", encoding="utf-8") as f:
+            chunks = [json.loads(line) for line in f]
+        for c in chunks:
+            self.assertEqual(c["path"], "single.md")
+
     def test_build_overwrite_existing_index(self) -> None:
         self._touch("note.md")
         out_dir = self.root / "out"
@@ -256,6 +280,34 @@ class CliBuildTests(unittest.TestCase):
         self.assertGreater(manifest["chunk_count"], 0)
         # Two sections in one file = 2 chunks
         self.assertEqual(manifest["chunk_count"], 2)
+
+    def test_build_custom_max_chars(self) -> None:
+        self._touch("note.md")
+        out_dir = self.root / "out"
+        args = _make_build_args(str(self.root), str(out_dir), max_chars=100)
+        exit_code = cli.handle_build(args, embedder=self.embedder)
+        self.assertEqual(exit_code, 0)
+        from semantic_index.indexer import load_manifest
+        manifest = load_manifest(out_dir)
+        self.assertEqual(manifest.get("chunking", {}).get("max_chars"), 100)
+
+    def test_build_custom_model_name(self) -> None:
+        self._touch("note.md")
+        out_dir = self.root / "out"
+        args = _make_build_args(str(self.root), str(out_dir), model="custom-model")
+        capture = FakeEmbedder(dims=4)
+        capture.model_name = "custom-model"  # type: ignore[attr-defined]
+        exit_code = cli.handle_build(args, embedder=capture)
+        self.assertEqual(exit_code, 0)
+        from semantic_index.indexer import load_manifest
+        manifest = load_manifest(out_dir)
+        self.assertEqual(manifest.get("model_name"), "custom-model")
+
+    def test_build_max_chars_too_low(self) -> None:
+        self._touch("note.md")
+        args = _make_build_args(str(self.root), max_chars=0)
+        exit_code = cli.handle_build(args, embedder=self.embedder)
+        self.assertEqual(exit_code, 1)
 
 
 class CliSearchTests(unittest.TestCase):
