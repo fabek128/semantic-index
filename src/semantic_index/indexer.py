@@ -18,7 +18,14 @@ import numpy as np
 from semantic_index import __version__
 
 
-DEFAULT_QUERY_PREFIX = "query: "
+DEFAULT_QUERY_PREFIX = ""
+"""Default prefix prepended to search queries before embedding.
+
+``""`` (no prefix) for the default model
+``sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2``.
+Set to ``"query: "`` when using E5-family models, which require
+separate prefixes for queries and passages.
+"""
 MANIFEST_SCHEMA_VERSION = 1
 
 
@@ -294,8 +301,10 @@ def search_index(
     top_k:
         Maximum number of results to return.
     query_prefix:
-        Prefix prepended to the query before embedding
-        (e.g. the E5 ``query: `` prefix).
+        Prefix prepended to the query before embedding.
+        The default (``""``) is correct for the built-in default model.
+        Set to ``"query: "`` for E5-family models, which require a
+        separate ``"query: "`` prefix.
 
     Returns
     -------
@@ -343,6 +352,7 @@ class FastEmbedEmbedder:
     """
 
     DEFAULT_MODEL: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    """Default embedding model (384 dims, multilingual, no prefix needed)."""
 
     def __init__(self, model_name: str | None = None) -> None:
         from fastembed import TextEmbedding  # type: ignore[import-untyped]

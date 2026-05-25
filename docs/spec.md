@@ -3,8 +3,9 @@
 > A practical recipe for building an embeddings pipeline with similarity search, optimized to be fast, simple, and memory efficient.
 
 > **Note:** This document is a general technical reference. The current `semantic-index` implementation uses
-> `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (384 dims) and does not apply
-> `passage:` / `query:` prefixes. Prefixes are only needed for E5-family models.
+> `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (384 dims) and does **not** apply
+> `passage:` / `query:` prefixes by default. Prefixes are only needed for E5-family models.
+> See [Prefix policy](#prefix-policy) below.
 
 ## Quick recommendation
 
@@ -42,7 +43,7 @@ General-purpose LLMs (Qwen, Llama, GPT) are designed to generate text, not to pr
 
 ## 1. Generate embeddings — Lightweight models
 
-### Option A — fastembed + multilingual E5 (recommended for simple/local use)
+### Option A — fastembed + paraphrasing model (recommended for simple/local use)
 
 ```bash
 pip install fastembed numpy
@@ -52,24 +53,15 @@ pip install fastembed numpy
 from fastembed import TextEmbedding
 
 # Good default for Spanish / mixed-language content
-model = TextEmbedding(model_name="intfloat/multilingual-e5-small")
+# No prefixes needed — see Prefix policy below.
+model = TextEmbedding(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 
-# E5 uses prefixes for retrieval
-emb = list(model.embed(["passage: text to embed"]))[0]
+emb = list(model.embed(["text to embed"]))[0]
 ```
 
-Advantages:
+This is the **current default model** used by `semantic-index`. It works well for multilingual notes, runs on CPU, and avoids installing `torch`.
 
-- uses ONNX Runtime;
-- runs well on CPU;
-- avoids installing `torch` and most of the `transformers` stack;
-- is a good option for small scripts and local tools.
-
-For queries:
-
-```python
-query_emb = list(model.embed(["query: color of the sky"]))[0]
-```
+For E5-family models, see the [Prefix policy](#prefix-policy).
 
 ### Option B — sentence-transformers (standard and flexible)
 
@@ -88,13 +80,13 @@ Use this option if you already have `torch` installed, want more control, or pla
 
 ### Models by need
 
-| Model | Dims | Best for | Note |
-|-------|------|----------|------|
-| `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` | 384 | Spanish and multilingual | **Implemented default** in `semantic-index` |
-| `intfloat/multilingual-e5-small` | 384 | Spanish and multilingual | Not supported in fastembed >=0.8; use `paraphrase-multilingual-MiniLM-L12-v2` instead |
-| `BAAI/bge-small-en-v1.5` | 384 | English, good quality/size | Very good retrieval in English |
-| `all-MiniLM-L6-v2` | 384 | English, very lightweight | Widely used, but not ideal as a Spanish default |
-| `all-MiniLM-L12-v2` | 384 | English, better quality than L6 | Slightly heavier |
+| Model | Dims | Best for | Prefix needed | Note |
+|-------|------|----------|-------------|------|
+| `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` | 384 | Spanish and multilingual | No | **Default** in `semantic-index` |
+| `intfloat/multilingual-e5-small` | 384 | Spanish and multilingual | `passage:` / `query:` | Not supported in fastembed >=0.8 |
+| `BAAI/bge-small-en-v1.5` | 384 | English, good quality/size | See model docs | Very good retrieval in English |
+| `all-MiniLM-L6-v2` | 384 | English, very lightweight | No | Widely used, not ideal for Spanish |
+| `all-MiniLM-L12-v2` | 384 | English, better quality than L6 | No | Slightly heavier |
 
 ### Option C — local GGUF models
 
@@ -201,6 +193,24 @@ def normalize(vectors: np.ndarray) -> np.ndarray:
 
 ## 4. In-memory similarity search
 
+### ### Prefix policy
+
+Prefixes depend on the embedding model family:
+
+| Model family | Document prefix | Query prefix | Example |
+|-------------|----------------|-------------|---------|
+| `paraphrase-multilingual-MiniLM-L12-v2` (default) | None | None | `"text to embed"` |
+| `intfloat/multilingual-e5-*` | `"passage: "` | `"query: "` | `"passage: text to index"`, `"query: search term"` |
+| `BAAI/bge-*` | None | `"Represent this sentence for searching: "` | Depends on variant |
+
+The `semantic-index` default is always **no prefix** because the built-in default model
+(`paraphrase-multilingual-MiniLM-L12-v2`) does not benefit from prefixes.
+
+To use E5-style prefixes, pass `query_prefix="query: "` to `search_index` (or the
+corresponding argument in the CLI). For E5, you must also prefix documents with
+`"passage: "` **before** building the index, since the build command does not add
+prefixes automatically.
+
 ### With pure numpy (enough for < 50k-100k chunks)
 
 ```python
@@ -208,7 +218,8 @@ import numpy as np
 
 
 def search(query: str, model, docs: list[dict], embeddings_norm: np.ndarray, k: int = 5):
-    q = np.array(list(model.embed([f"query: {query}"])), dtype=np.float32)
+    # For E5 models use: f"query: {query}"
+    q = np.array(list(model.embed([query])), dtype=np.float32)
     q = q / np.linalg.norm(q, axis=1, keepdims=True)
 
     scores = (q @ embeddings_norm.T)[0]
@@ -253,7 +264,7 @@ import numpy as np
 from fastembed import TextEmbedding
 
 
-MODEL_NAME = "intfloat/multilingual-e5-small"
+MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 INDEX_DIR = Path(".embeddings")
 
 
@@ -267,8 +278,8 @@ def normalize(vectors: np.ndarray) -> np.ndarray:
 def build_index(raw_docs: list[dict]):
     model = TextEmbedding(model_name=MODEL_NAME)
 
-    # E5: documents as passage
-    texts = ["passage: " + d["text"] for d in raw_docs]
+    # No prefix needed for the default model
+    texts = [d["text"] for d in raw_docs]
     embeddings = np.array(list(model.embed(texts)), dtype=np.float32)
     embeddings_norm = normalize(embeddings)
 
@@ -293,7 +304,9 @@ def search(query: str, k: int = 5):
     model = TextEmbedding(model_name=MODEL_NAME)
     docs, embeddings_norm = load_index()
 
-    q = np.array(list(model.embed(["query: " + query])), dtype=np.float32)
+    # No prefix needed for the default model
+    # For E5 use: "query: " + query
+    q = np.array(list(model.embed([query])), dtype=np.float32)
     q = normalize(q)
 
     scores = (q @ embeddings_norm.T)[0]
@@ -350,7 +363,8 @@ For the initial case: **I would not use a DB**.
 - Do not embed very long documents as a single string.
 - Do not mix embeddings from different models in the same index.
 - Do not store indexes with `pickle` if they may come from another machine/person.
-- For E5, keep prefix usage consistent: `passage:` for documents and `query:` for searches.
+- For E5-family models, keep prefix usage consistent: `passage:` for documents and `query:` for searches.
+- For the default model (`paraphrase-multilingual-MiniLM-L12-v2`), do **not** use prefixes — they add no value and may reduce quality.
 - For exact word searches, embeddings do not replace BM25/FTS. If you need precision for identifiers, combine lexical + vector search.
 
 ---

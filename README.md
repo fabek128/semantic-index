@@ -25,7 +25,8 @@ Included now:
   - `semantic-index search <query>` — search an existing index with ranked results
 - Output formats: `text` (human-readable), `json`, `jsonl` (agent-friendly)
 - Architecture documentation in [`docs/architecture.md`](docs/architecture.md).
-- Default embedding model: `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (384 dims, multilingual).
+- Default embedding model: `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (384 dims, multilingual, no prefixes needed).
+- Prefix policy: the default model does **not** use `passage:` / `query:` prefixes. E5-family models require them — see [`docs/spec.md#prefix-policy`](docs/spec.md).
 
 Not included yet:
 
