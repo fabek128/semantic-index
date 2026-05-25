@@ -8,7 +8,7 @@ This document describes the architecture for `semantic-index`. The build command
 - Local-first: use local files only.
 - No database: persist data in simple, auditable formats.
 - No external services: do not send note content outside the machine.
-- Minimal dependencies: add `fastembed` and `numpy` only when embeddings/search are implemented.
+- Minimal dependencies: `fastembed` and `numpy` for embeddings and search.
 - Safe formats: avoid `pickle`; prefer `jsonl` and `npz`.
 
 ## Components
@@ -132,9 +132,9 @@ Requirements for agents:
 - Actionable errors without stack traces by default.
 - Do not modify files during `search`.
 
-## Planned persistence
+## Persistence format
 
-Future default directory:
+The build command writes to a user-specified `--out` directory (default `.semantic-index/`):
 
 ```text
 .semantic-index/
@@ -142,13 +142,13 @@ Future default directory:
 └── index.npz
 ```
 
-`docs.jsonl` stores metadata and text per chunk. `index.npz` stores the normalized embedding matrix.
+`docs.jsonl` stores chunk metadata and text (one JSON object per line). `index.npz` stores the normalized `float32` embedding matrix (n_chunks × dims).
 
 Reasons:
 
 - `jsonl` is inspectable and easy to process.
 - `npz` is efficient for `numpy` arrays.
-- Both avoid introducing a database in the first version.
+- Both avoid introducing a database.
 
 ## Non-goals for now
 

@@ -2,6 +2,10 @@
 
 > A practical recipe for building an embeddings pipeline with similarity search, optimized to be fast, simple, and memory efficient.
 
+> **Note:** This document is a general technical reference. The current `semantic-index` implementation uses
+> `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (384 dims) and does not apply
+> `passage:` / `query:` prefixes. Prefixes are only needed for E5-family models.
+
 ## Quick recommendation
 
 If you want something **easy to implement, database-free, and fully in memory**, use:
@@ -13,16 +17,16 @@ fastembed + numpy + npz/jsonl
 Recommended default for Spanish/multilingual notes:
 
 ```text
-intfloat/multilingual-e5-small
+sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
 ```
 
 Flow:
 
 1. Split documents into chunks.
-2. Embed documents with the `passage: ` prefix.
+2. Embed documents (add `passage: ` prefix if using E5 models).
 3. Normalize embeddings.
 4. Search with dot product using `numpy`.
-5. Optionally save to `index.npz` + `docs.jsonl`.
+5. Save to `index.npz` + `docs.jsonl`.
 
 Do not add ChromaDB, LanceDB, or FAISS at the beginning. Add them only if volume or requirements justify them.
 
@@ -86,8 +90,8 @@ Use this option if you already have `torch` installed, want more control, or pla
 
 | Model | Dims | Best for | Note |
 |-------|------|----------|------|
+| `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` | 384 | Spanish and multilingual | **Implemented default** in `semantic-index` |
 | `intfloat/multilingual-e5-small` | 384 | Spanish and multilingual | Not supported in fastembed >=0.8; use `paraphrase-multilingual-MiniLM-L12-v2` instead |
-| `paraphrase-multilingual-MiniLM-L12-v2` | 384 | Simple multilingual use | Easy with sentence-transformers |
 | `BAAI/bge-small-en-v1.5` | 384 | English, good quality/size | Very good retrieval in English |
 | `all-MiniLM-L6-v2` | 384 | English, very lightweight | Widely used, but not ideal as a Spanish default |
 | `all-MiniLM-L12-v2` | 384 | English, better quality than L6 | Slightly heavier |

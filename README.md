@@ -50,48 +50,13 @@ python -m pip install -e .
 Then:
 
 ```bash
-semantic-index --help
-semantic-index version
-```
-
-Alternative without installing the package:
-
-```bash
-PYTHONPATH=src python -m semantic_index --help
-PYTHONPATH=src python -m semantic_index version
-PYTHONPATH=src python -m semantic_index build ./notes
-PYTHONPATH=src python -m semantic_index build ./docs --out ./my-index
-```
-
-### Search command examples
-
-```bash
-# Search with default text output
-semantic-index search "query text" --index .semantic-index --top-k 5
-
-# Agent-friendly JSON output
-semantic-index search "query text" --index .semantic-index --format json
-
-# JSONL output (one object per line)
-semantic-index search "query text" --index .semantic-index --format jsonl
-```
-
-### Build command examples
-
-```bash
-# Discover Markdown files in a directory
-semantic-index build ./notes
-
-# Use a single Markdown file as input
-semantic-index build ./notes/project.md
-
-# Specify a custom output directory (index not built yet)
+# Specify a custom output directory
 semantic-index build ./notes --out ./my-index
 ```
 
 The build command validates paths, skips common generated directories (`.git`,
 `.venv`, `.semantic-index`, `.embeddings`, `__pycache__`), ignores symlinks,
-and prints a deterministic summary of discovered files.
+chunks each file, generates local embeddings, and writes the index.
 
 ### Index output
 
@@ -109,8 +74,8 @@ The index produces two files:
 
 ### Chunking (library module)
 
-The `semantic_index.chunker` module provides Markdown chunking for future
-indexing:
+The `semantic_index.chunker` module provides Markdown chunking used by the
+build command:
 
 ```python
 from pathlib import Path
@@ -129,7 +94,7 @@ Each chunk includes:
 - `chunk_index` — sequential index within the file
 - `text` — chunk content
 
-The chunker is a pure standard-library function with no runtime dependencies.
+The chunker depends only on the Python standard library.
 
 ## Testing
 
@@ -139,38 +104,43 @@ Run the unit test suite from the repository root:
 python -m unittest discover
 ```
 
-The current tests use only the Python standard library and cover the minimal CLI entrypoints.
+The test suite covers CLI entrypoints, Markdown discovery, chunking, index building, and search.
 
 ## Project structure
 
 ```text
 semantic-index/
 ├── docs/
-│   ├── architecture.md   # Planned architecture
-│   └── spec.md           # Base specification / technical recipe
+│   ├── architecture.md   # Architecture and components
+│   ├── roadmap.md        # Development roadmap and milestones
+│   └── spec.md           # Technical specification / recipe
 ├── src/
 │   └── semantic_index/
 │       ├── __init__.py
 │       ├── __main__.py
 │       ├── cli.py
 │       ├── discovery.py
-│       └── chunker.py
+│       ├── chunker.py
+│       └── indexer.py
 ├── tests/
+│   ├── __init__.py
 │   ├── test_cli.py
 │   ├── test_discovery.py
-│   └── test_chunker.py
+│   ├── test_chunker.py
+│   └── test_indexer.py
 ├── .gitignore
 ├── pyproject.toml
 └── README.md
 ```
 
-## Planned architecture
+## Architecture
 
-The planned flow is:
+The CLI implements two commands:
 
-1. `build index`: discover Markdown files, split them into chunks, generate local embeddings, and save the index.
-2. `search index`: load `docs.jsonl` + `index.npz`, embed the query, and return the best chunks.
-3. Agent integration: expose results through the CLI in simple and stable formats, without a daemon or API.
+1. **`build`**: discover Markdown files, split into chunks, generate local embeddings, and save `docs.jsonl` + `index.npz`.
+2. **`search`**: load `docs.jsonl` + `index.npz`, embed the query, and return the best chunks with ranked scores.
+
+Future phases: hybrid search, index metadata and lifecycle, retrieval quality controls.
 
 See details in [`docs/architecture.md`](docs/architecture.md).
 
