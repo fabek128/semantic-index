@@ -101,11 +101,19 @@ def _save_index(
     source_dirs: list[str] | None = None,
     max_chars: int = 1800,
 ) -> None:
-    """Persist chunk metadata and embeddings to *output_dir* atomically.
+    """Persist chunk metadata and embeddings to *output_dir*.
 
     Files are written to a temporary subdirectory first and then renamed
     into place.  If any write fails, the temporary directory is removed
     and the original index (if any) is left untouched.
+
+    .. warning::
+
+       This protects against write failures but is **not** a fully
+       transactional multi-file commit.  A crash between consecutive
+       ``replace()`` calls can leave ``index.npz``, ``docs.jsonl``, and
+       ``manifest.json`` out of sync.  ``load_index`` detects these
+       inconsistent states and raises a clear error.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -264,18 +272,49 @@ def load_index(index_dir: Path) -> tuple[list[dict], np.ndarray]:
         raise ValueError("index.npz missing 'embeddings' key")
     embeddings = data["embeddings"]
 
+    if embeddings.ndim != 2:
+        raise ValueError(
+            f"Expected a 2D embedding matrix, but index.npz contains "
+            f"a {embeddings.ndim}D array. The index may be corrupted. "
+            f"Rebuild with `semantic-index build`."
+        )
+
+    if embeddings.dtype.kind not in ("f",):
+        raise ValueError(
+            f"Expected float embeddings, but index.npz has dtype "
+            f"{embeddings.dtype}. The index may be corrupted. "
+            f"Rebuild with `semantic-index build`."
+        )
+
     manifest_dims = manifest.get("embedding_dimensions")
     if manifest_dims is not None and embeddings.shape[1] != manifest_dims:
         raise ValueError(
             f"Embedding dimension mismatch: loaded embeddings have "
             f"{embeddings.shape[1]} dimensions, but manifest reports "
-            f"{manifest_dims}. The index may be corrupted."
+            f"{manifest_dims}. The index may be corrupted. "
+            f"Rebuild with `semantic-index build`."
+        )
+
+    manifest_chunk_count = manifest.get("chunk_count")
+    if manifest_chunk_count is not None and embeddings.shape[0] != manifest_chunk_count:
+        raise ValueError(
+            f"chunk_count mismatch: manifest reports {manifest_chunk_count} "
+            f"chunks, but index.npz has {embeddings.shape[0]} embeddings. "
+            f"The index may be inconsistent. Rebuild with `semantic-index build`."
+        )
+
+    if manifest_chunk_count is not None and len(chunks) != manifest_chunk_count:
+        raise ValueError(
+            f"chunk_count mismatch: manifest reports {manifest_chunk_count} "
+            f"chunks, but docs.jsonl has {len(chunks)} entries. "
+            f"The index may be inconsistent. Rebuild with `semantic-index build`."
         )
 
     if embeddings.shape[0] != len(chunks):
         raise ValueError(
-            f"Chunk/embedding mismatch: {len(chunks)} chunks vs "
-            f"{embeddings.shape[0]} embeddings"
+            f"Chunk/embedding count mismatch: {len(chunks)} chunks vs "
+            f"{embeddings.shape[0]} embeddings. "
+            f"The index may be inconsistent. Rebuild with `semantic-index build`."
         )
 
     return chunks, embeddings

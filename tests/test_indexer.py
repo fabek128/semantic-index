@@ -352,6 +352,71 @@ class CorruptIndexTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             load_index(self.index_dir)
 
+    def test_load_index_1d_embedding_raises(self) -> None:
+        np.savez_compressed(self.index_dir / "index.npz", embeddings=np.array([1.0, 0.0], dtype=np.float32))
+        with (self.index_dir / "docs.jsonl").open("w", encoding="utf-8") as f:
+            f.write('{"id": "c0", "text": "A"}\n')
+        self._write_manifest()
+        with self.assertRaises(ValueError) as ctx:
+            load_index(self.index_dir)
+        self.assertIn("2D", str(ctx.exception))
+
+    def test_load_index_non_float_embedding_raises(self) -> None:
+        np.savez_compressed(self.index_dir / "index.npz", embeddings=np.array([[1, 0]], dtype=np.int32))
+        with (self.index_dir / "docs.jsonl").open("w", encoding="utf-8") as f:
+            f.write('{"id": "c0", "text": "A"}\n')
+        self._write_manifest()
+        with self.assertRaises(ValueError) as ctx:
+            load_index(self.index_dir)
+        self.assertIn("float", str(ctx.exception).lower())
+
+    def test_load_index_manifest_chunk_count_mismatch_npz(self) -> None:
+        np.savez_compressed(
+            self.index_dir / "index.npz",
+            embeddings=np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32),
+        )
+        with (self.index_dir / "docs.jsonl").open("w", encoding="utf-8") as f:
+            f.write('{"id": "c0", "text": "A"}\n')
+            f.write('{"id": "c1", "text": "B"}\n')
+        from semantic_index.indexer import _save_manifest
+        _save_manifest(self.index_dir, model_dimensions=2, chunk_count=5)
+        with self.assertRaises(ValueError) as ctx:
+            load_index(self.index_dir)
+        self.assertIn("chunk_count", str(ctx.exception))
+        self.assertIn("5", str(ctx.exception))
+        self.assertIn("2", str(ctx.exception))
+
+    def test_load_index_manifest_chunk_count_mismatch_docs(self) -> None:
+        np.savez_compressed(
+            self.index_dir / "index.npz",
+            embeddings=np.array([[1.0, 0.0], [0.0, 1.0], [0.5, 0.5]], dtype=np.float32),
+        )
+        with (self.index_dir / "docs.jsonl").open("w", encoding="utf-8") as f:
+            f.write('{"id": "c0", "text": "A"}\n')
+        from semantic_index.indexer import _save_manifest
+        _save_manifest(self.index_dir, model_dimensions=2, chunk_count=5)
+        with self.assertRaises(ValueError) as ctx:
+            load_index(self.index_dir)
+        self.assertIn("chunk_count", str(ctx.exception))
+        self.assertIn("5", str(ctx.exception))
+
+    def test_load_index_manifest_chunk_count_mismatch_docs_only(self) -> None:
+        """Both npz and docs disagree with manifest but each other agree."""
+        np.savez_compressed(
+            self.index_dir / "index.npz",
+            embeddings=np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32),
+        )
+        with (self.index_dir / "docs.jsonl").open("w", encoding="utf-8") as f:
+            f.write('{"id": "c0", "text": "A"}\n')
+        from semantic_index.indexer import _save_manifest
+        _save_manifest(self.index_dir, model_dimensions=2, chunk_count=2)
+        with self.assertRaises(ValueError) as ctx:
+            load_index(self.index_dir)
+        self.assertIn("chunk_count", str(ctx.exception))
+        self.assertIn("docs.jsonl", str(ctx.exception))
+        self.assertIn("1", str(ctx.exception))
+
+
 
 # ---------------------------------------------------------------------------
 #  Manifest tests
