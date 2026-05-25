@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - run: pip install --upgrade pip
+
+      - name: Install package
+        run: pip install -e .
+
+      - name: Unit tests
+        run: python -m unittest discover
+
+      - name: Compile check
+        run: python -m compileall -q src tests
+
+      - name: CLI smoke test — help
+        run: semantic-index --help
+
+      - name: CLI smoke test — version
+        run: semantic-index version
