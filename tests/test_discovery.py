@@ -3,11 +3,18 @@
 from __future__ import annotations
 
 import os
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-from semantic_index.discovery import DEFAULT_EXCLUDE_DIRS, discover_markdown
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SRC_DIR = REPO_ROOT / "src"
+sys.path.insert(0, str(SRC_DIR))
+
+
+from semantic_index.discovery import DEFAULT_EXCLUDE_DIRS, discover_markdown  # noqa: E402
 
 
 class DiscoverMarkdownTests(unittest.TestCase):

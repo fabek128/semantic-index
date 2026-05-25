@@ -4,13 +4,20 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 import numpy as np
 
-from semantic_index.indexer import (
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SRC_DIR = REPO_ROOT / "src"
+sys.path.insert(0, str(SRC_DIR))
+
+
+from semantic_index.indexer import (  # noqa: E402
     DEFAULT_QUERY_PREFIX,
     _normalize,
     _save_index,
