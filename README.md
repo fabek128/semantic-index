@@ -215,12 +215,14 @@ semantic-index/
 │       ├── cli.py
 │       ├── discovery.py
 │       ├── chunker.py
-│       └── indexer.py
+│       ├── indexer.py
+│       └── lexical.py
 ├── tests/
 │   ├── __init__.py
 │   ├── test_cli.py
 │   ├── test_discovery.py
 │   ├── test_chunker.py
+│   ├── test_lexical.py
 │   └── test_indexer.py
 ├── .github/
 │   └── workflows/
@@ -269,6 +271,71 @@ During **`0.x` pre-alpha** development:
 
 ## Release checklist
 
+### Build and verify installable artifacts
+
+```bash
+# Build wheel and sdist
+python -m build
+
+# Verify artifacts exist
+ls -la dist/
+
+# Install in a clean environment
+python3 -m venv /tmp/artifact-check
+source /tmp/artifact-check/bin/activate
+pip install --upgrade pip
+pip install dist/semantic_index-*.whl
+
+# CLI entrypoint works from the installed package
+semantic-index --help
+semantic-index version
+
+# Cleanup
+deactivate
+rm -rf /tmp/artifact-check
+```
+
+### Alpha end-to-end smoke test
+
+Run this in a clean environment with the installed package (or from the
+source tree via ``pip install -e .``):
+
+```bash
+# 1. Build a small index
+mkdir -p /tmp/alpha-notes
+echo '# Quick brown fox' > /tmp/alpha-notes/animals.md
+echo '## Mammals' >> /tmp/alpha-notes/animals.md
+echo 'Foxes are quick and clever.' >> /tmp/alpha-notes/animals.md
+echo '# Python' > /tmp/alpha-notes/programming.md
+echo '## Language design' >> /tmp/alpha-notes/programming.md
+echo 'Python supports multiple paradigms.' >> /tmp/alpha-notes/programming.md
+semantic-index build /tmp/alpha-notes --out /tmp/alpha-index
+
+# 2. Semantic search (default)
+semantic-index search "fox" --index /tmp/alpha-index
+semantic-index search "python" --index /tmp/alpha-index --format json
+
+# 3. Lexical search (exact term matching)
+semantic-index search "Mammals" --index /tmp/alpha-index --mode lexical
+semantic-index search "programming" --index /tmp/alpha-index --mode lexical
+
+# 4. Hybrid search (semantic + lexical)
+semantic-index search "fox" --index /tmp/alpha-index --mode hybrid
+semantic-index search "programming" --index /tmp/alpha-index --mode hybrid --semantic-weight 0.7
+
+# 5. Bounded output
+semantic-index search "fox" --index /tmp/alpha-index --max-chars 5
+
+# 6. JSON and JSONL formats
+semantic-index search "fox" --index /tmp/alpha-index --format json
+semantic-index search "fox" --index /tmp/alpha-index --format jsonl
+
+# 7. Cleanup
+rm -rf /tmp/alpha-notes /tmp/alpha-index
+```
+
+### Full release validation
+
 Run these commands in a clean environment before tagging a release:
 
 ```bash
@@ -282,25 +349,13 @@ pip install -e .
 semantic-index --help
 semantic-index version
 
-# 3. Build and search smoke test
-mkdir -p /tmp/release-notes
-echo '# Hello' > /tmp/release-notes/welcome.md
-echo '## Section' >> /tmp/release-notes/welcome.md
-echo 'World.' >> /tmp/release-notes/welcome.md
-semantic-index build /tmp/release-notes --out /tmp/release-idx
-semantic-index search "hello" --index /tmp/release-idx
-semantic-index search "hello" --index /tmp/release-idx --format json
-semantic-index search "hello" --index /tmp/release-idx --format jsonl
-semantic-index search "hello" --index /tmp/release-idx --max-chars 5
-rm -rf /tmp/release-notes /tmp/release-idx
-
-# 4. Unit tests
+# 3. Unit tests
 python -m unittest discover
 
-# 5. Code quality
+# 4. Code quality
 python -m compileall -q src
 
-# 6. Cleanup
+# 5. Cleanup
 deactivate
 rm -rf /tmp/release-check
 ```
@@ -332,6 +387,7 @@ Before every release, verify:
 - [ ] Embedding model is downloaded and cached locally (no data sent externally).
 - [ ] Default model does not require `passage:` / `query:` prefixes.
 - [ ] `--top-k` and `--max-chars` bound output size.
+- [ ] Exit codes are non-zero on expected errors.
 
 ### Offline use and model caching
 
@@ -350,7 +406,6 @@ fully offline use:
 If the model is not cached and no network is available, ``fastembed`` raises
 an error.  The error message includes the model name and suggests checking
 the network connection or pre-caching the model.
-- [ ] Exit codes are non-zero on expected errors.
 
 ## Roadmap
 

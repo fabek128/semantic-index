@@ -35,8 +35,8 @@ Current responsibilities:
 5. Read each file as UTF-8.
 6. Convert each document into Markdown chunks (respecting ``--max-chars``).
 7. Generate local embeddings via ``fastembed`` (using ``--model`` if provided).
- 8. Normalize vectors for cosine similarity via dot product.
- 9. Save:
+8. Normalize vectors for cosine similarity via dot product.
+9. Save:
     - `.semantic-index/manifest.json`: self-describing index metadata.
     - `.semantic-index/docs.jsonl`: chunk text and metadata.
     - `.semantic-index/index.npz`: normalized `float32` embedding matrix.
