@@ -99,7 +99,7 @@ def load_index(index_dir: Path) -> tuple[list[dict], np.ndarray]:
     FileNotFoundError
         If the index directory or required files are missing.
     ValueError
-        If files are malformed.
+        If files are malformed, corrupt, or inconsistent.
     """
     docs_path = index_dir / "docs.jsonl"
     npz_path = index_dir / "index.npz"
@@ -123,7 +123,11 @@ def load_index(index_dir: Path) -> tuple[list[dict], np.ndarray]:
     if not chunks:
         raise ValueError("docs.jsonl is empty")
 
-    data = np.load(npz_path)
+    try:
+        data = np.load(npz_path)
+    except (OSError, ValueError) as exc:
+        raise ValueError(f"Failed to load index file {npz_path}: {exc}") from exc
+
     if "embeddings" not in data:
         raise ValueError("index.npz missing 'embeddings' key")
     embeddings = data["embeddings"]
