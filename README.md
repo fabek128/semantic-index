@@ -2,7 +2,9 @@
 
 `semantic-index` is a CLI-first tool for turning local Markdown notes into retrievable context for AI agents.
 
-Current status: **alpha** (v0.12.0a1). The CLI supports index building and semantic, lexical, and hybrid search.
+Current status: **beta** (v0.12.0b1-pre). The CLI supports index building and semantic, lexical, and hybrid search.
+
+First alpha release: [v0.12.0-alpha.1](https://github.com/fabek128/semantic-index/releases/tag/v0.12.0-alpha.1) — [smoke test](docs/releases/0.12.0a1/release-smoke-test.md).
 
 ## Goal
 
