@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 for its `0.x` pre-alpha releases (see [Versioning policy](README.md#versioning-policy)).
 
+## [0.13.0b1] — 2026-05-26
+
+### Added
+
+- Dogfood validation report (`docs/dogfood-report.md`) with sanitized
+  metrics on a realistic corpus (11 files, 110 chunks, no RC blockers).
+- Scale and performance baseline (`docs/corpus-validation.md`) with
+  `--scale` flag for the corpus generator, covering small (22 files)
+  and medium (106 files) corpus sizes.
+- AI-agent integration guide (`docs/agent-integration.md`) with workflow
+  patterns, output parsing examples, and security checklist.
+- Beta privacy and security review (`docs/security-review.md`) — no
+  blockers found.
+- RC readiness criteria (`docs/rc-criteria.md`) with checklist for
+  declaring a release candidate.
+- CLI UX polish: build/search help text documents model download and
+  search modes; empty directory returns exit code 1 with actionable
+  message.
+
+### Changed
+
+- Package version bumped to `0.13.0b1` (dogfood and RC readiness beta).
+- README restructured with agent integration and troubleshooting links.
+
 ## [0.12.0b1] — 2026-05-26
 
 ### Added
