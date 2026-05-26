@@ -407,6 +407,11 @@ If the model is not cached and no network is available, ``fastembed`` raises
 an error.  The error message includes the model name and suggests checking
 the network connection or pre-caching the model.
 
+## Troubleshooting
+
+See [`docs/troubleshooting.md`](docs/troubleshooting.md) for common issues
+and solutions.
+
 ## Roadmap
 
 The first local MVP shape is implemented: Markdown discovery, chunking, local embedding index persistence, and CLI search.
