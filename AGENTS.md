@@ -58,7 +58,7 @@ Not implemented yet:
 ## GitHub workflow and planning
 
 Current development stage: **alpha**.
-Current execution milestone: `v0.12.0-beta.1: Beta hardening and distribution`.
+Current execution milestone: `v0.13.0-beta.1: Dogfood, fixes, and RC readiness`.
 
 Use the simplest GitHub workflow for this project:
 
@@ -117,7 +117,8 @@ Milestone roadmap:
 | `v0.11.0-pre-alpha: Retrieval quality evaluation and hybrid search` | Complete: lexical search, hybrid ranking, and deterministic retrieval fixtures. | #35, #36, #37 |
 | `v0.12.0-alpha-candidate: Executable package and alpha readiness` | Complete: regression fix, docs/spec alignment, artifact validation, version/changelog, and alpha smoke flow. | #46, #47, #48, #49, #50, #52 |
 | `v0.12.0-alpha.1: First alpha release` | Complete: final release docs, tag, and GitHub prerelease. | #54, #55, #56 |
-| `v0.12.0-beta.1: Beta hardening and distribution` | Harden smoke tests, artifacts, CI/platforms, CLI/output contracts, dependencies, corpus validation, troubleshooting, and beta release. | #58, #59, #60, #61, #62, #63, #64, #65, #66 |
+| `v0.12.0-beta.1: Beta hardening and distribution` | Complete: smoke tests, artifacts, CI/platforms, CLI/output contracts, dependencies, corpus validation, troubleshooting, and beta release. | #58, #59, #60, #61, #62, #63, #64, #65, #66 |
+| `v0.13.0-beta.1: Dogfood, fixes, and RC readiness` | Dogfood realistic notes, capture sanitized metrics, harden agent workflows/privacy, polish UX, define RC gates, and prepare next prerelease. | #76, #77, #78, #79, #80, #81, #82 |
 
 Detailed roadmap lives in `docs/roadmap.md`.
 

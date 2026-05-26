@@ -1,8 +1,8 @@
 # Roadmap
 
-Current stage: **alpha** (v0.12.0a1).
+Current stage: **beta** (v0.12.0b1).
 
-The project has a published first alpha release and a complete end-to-end local CLI: Markdown discovery, chunking, local embedding index persistence, semantic search, lexical search, hybrid ranking, JSON/JSONL output, CI, and safety checks for local index files.
+The project has published alpha and beta prereleases and a complete end-to-end local CLI: Markdown discovery, chunking, local embedding index persistence, semantic search, lexical search, hybrid ranking, JSON/JSONL output, CI, and safety checks for local index files.
 
 ## Completed phases
 
@@ -21,54 +21,52 @@ The project has a published first alpha release and a complete end-to-end local 
 | `v0.11.0-pre-alpha: Retrieval quality evaluation and hybrid search` | Complete | Lexical search, hybrid ranking, and deterministic retrieval fixtures. |
 | `v0.12.0-alpha-candidate: Executable package and alpha readiness` | Complete | Regression fix, docs alignment, artifact validation, version/changelog, and alpha smoke flow. |
 | `v0.12.0-alpha.1: First alpha release` | Complete | Final release docs, tag `v0.12.0-alpha.1`, and GitHub prerelease publication. |
+| `v0.12.0-beta.1: Beta hardening and distribution` | Complete | Reproducible smoke tests, artifact validation, platform docs/CI, dependency policy, corpus validation, troubleshooting, and beta prerelease. |
 
 ## Current phase
 
 ```text
-v0.12.0-beta.1: Beta hardening and distribution
+v0.13.0-beta.1: Dogfood, fixes, and RC readiness
 ```
 
-The alpha release is published. The beta phase should harden distribution, repeatability, platform coverage, output contracts, dependency policy, realistic corpus validation, and troubleshooting before publishing the first beta prerelease.
+The beta release is published. The next phase is dogfooding against realistic notes, fixing beta blockers, hardening AI-agent workflows, and deciding whether the next prerelease should be another beta or the first release candidate.
 
 Recommended execution order:
 
-1. #58 — archive alpha release evidence and switch docs to beta phase.
-2. #59 — make the release smoke test reproducible for beta.
-3. #60 — build and validate wheel/sdist artifacts.
-4. #61 — expand CI and document supported platforms.
-5. #62 — document and test the beta CLI/output contract.
-6. #63 — define dependency version policy.
-7. #64 — add realistic synthetic corpus validation.
-8. #65 — add beta troubleshooting guide.
-9. #66 — prepare and publish `v0.12.0-beta.1`.
+1. #76 — run real-notes dogfood validation with a sanitized report.
+2. #77 — establish beta scale and performance baseline.
+3. #78 — document AI-agent integration workflows for beta.
+4. #79 — perform beta privacy and security review before RC.
+5. #80 — triage and implement beta CLI UX polish.
+6. #81 — define RC readiness criteria and next version target.
+7. #82 — prepare and publish the next beta or first RC prerelease.
 
 ## Open phase
 
-### v0.12.0-beta.1: Beta hardening and distribution
+### v0.13.0-beta.1: Dogfood, fixes, and RC readiness
 
-Issues: #58, #59, #60, #61, #62, #63, #64, #65, #66
+Issues: #76, #77, #78, #79, #80, #81, #82
 
-Goal: make `semantic-index` beta-ready without changing the local-only, database-free architecture.
+Goal: validate `semantic-index` in realistic local workflows and reduce risk before a release candidate.
 
 Focus:
 
-- preserve alpha release evidence and align docs/specs for beta;
-- make the smoke test reproducible and safe for agents/humans;
-- validate wheel/sdist artifact installation outside the source tree;
-- expand CI or explicitly document platform support limits;
-- document CLI flags, exit codes, and JSON/JSONL output contract;
-- define dependency version policy for `fastembed`, `numpy`, and supported Python versions;
-- validate behavior with a larger synthetic Markdown corpus;
-- provide troubleshooting guidance for model cache, offline mode, permissions, corrupt indexes, and search modes;
-- prepare the `0.12.0b1` / `v0.12.0-beta.1` prerelease.
+- dogfood with real or representative Markdown notes without exposing private content;
+- capture sanitized metrics and search-quality observations;
+- document scale/performance expectations and practical limits;
+- document safe AI-agent workflows for Codex, Claude Code, OpenCode, and similar agents;
+- perform a privacy/security review based on generated artifacts and real usage;
+- polish CLI help, error messages, and common workflows based on beta feedback;
+- define RC readiness gates and select the next prerelease version target;
+- prepare either another beta or the first RC after dogfood results are known.
 
 Non-goals:
 
+- no stable `1.0.0` release until RC criteria are met;
 - no PyPI publishing unless explicitly requested;
 - no API or web server;
 - no database;
-- no FAISS/ANN acceleration;
-- no Docker image or standalone binary unless separately scoped.
+- no FAISS/ANN acceleration unless dogfood proves exact in-memory search is insufficient and a separate issue scopes it.
 
 ## Issue policy
 
