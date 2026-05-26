@@ -12,8 +12,8 @@ authors = [
   { name = "Fabian" }
 ]
 dependencies = [
-    "fastembed>=0.5.0",
-    "numpy>=1.26.0",
+    "fastembed>=0.5.0,<1.0.0",
+    "numpy>=1.26.0,<3.0.0",
 ]
 keywords = ["semantic-search", "markdown", "cli", "local-first", "ai-agents"]
 classifiers = [
