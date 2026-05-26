@@ -374,40 +374,11 @@ rm -rf /tmp/release-check
   `.semantic-index/`, `.embeddings/`, `docs.jsonl`, `index.npz`,
   and `manifest.json` are ignored by Git by default.
 
-### Security review checklist
+## AI-agent integration
 
-Before every release, verify:
-
-- [ ] No secrets, tokens, or credentials are committed or logged.
-- [ ] No user note content is sent over the network. Model download is cached locally.
-- [ ] All user-facing errors go to stderr with no stack traces.
-- [ ] Symlinks are not followed during discovery.
-- [ ] Index files are written atomically (temp dir + rename).
-- [ ] Corrupt or missing index files produce actionable errors.
-- [ ] `pickle` is not used for index persistence.
-- [ ] `.gitignore` covers all generated artifacts.
-- [ ] Embedding model is downloaded and cached locally (no data sent externally).
-- [ ] Default model does not require `passage:` / `query:` prefixes.
-- [ ] `--top-k` and `--max-chars` bound output size.
-- [ ] Exit codes are non-zero on expected errors.
-
-### Offline use and model caching
-
-The build command generates embeddings locally and **never sends note content
-to external services**.
-
-The first call to `semantic-index build` downloads the default embedding model
-from Hugging Face and caches it in ``~/.cache/fastembed/``.  This is a **one-time
-download**; subsequent builds use the local cache.  To prepare a machine for
-fully offline use:
-
-1. Run ``semantic-index build`` once with a network connection so the model
-   is cached.
-2. Subsequent builds in offline mode use the cached model automatically.
-
-If the model is not cached and no network is available, ``fastembed`` raises
-an error.  The error message includes the model name and suggests checking
-the network connection or pre-caching the model.
+See [`docs/agent-integration.md`](docs/agent-integration.md) for
+workflow patterns, output parsing examples, and security/privacy
+guidelines for agent usage.
 
 ## Troubleshooting
 
