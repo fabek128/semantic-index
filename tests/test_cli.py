@@ -488,9 +488,120 @@ class CliSearchTests(unittest.TestCase):
 
     def test_search_invalid_mode(self) -> None:
         exit_code, out, err = self._search("hello", mode="invalid")
-        # The CLI will fail because argparse validation will handle this
-        # Before argparse, our handler receives an unknown mode
         self.assertEqual(exit_code, 1)
+
+    # ------------------------------------------------------------------
+    # Output shape golden tests
+    # ------------------------------------------------------------------
+
+    SEARCH_KEYS = {"score", "id", "path", "title", "heading", "chunk_index", "text"}
+    HYBRID_KEYS = {"score", "id", "path", "title", "heading", "chunk_index", "text", "semantic_score", "lexical_score"}
+
+    def _assert_result_shape(self, results: list[dict], mode: str) -> None:
+        self.assertIsInstance(results, list)
+        self.assertGreater(len(results), 0)
+        r = results[0]
+        if mode == "hybrid":
+            expected = self.HYBRID_KEYS
+        else:
+            expected = self.SEARCH_KEYS
+        self.assertEqual(set(r.keys()), expected)
+        self.assertIsInstance(r["score"], (int, float))
+        self.assertIsInstance(r["id"], str)
+        self.assertIsInstance(r["path"], str)
+        self.assertIsInstance(r["title"], str)
+        self.assertIsInstance(r["heading"], str)
+        self.assertIsInstance(r["chunk_index"], int)
+        self.assertIsInstance(r["text"], str)
+        if mode == "hybrid":
+            self.assertIsInstance(r["semantic_score"], (int, float))
+            self.assertIsInstance(r["lexical_score"], (int, float))
+
+    def test_json_output_shape_semantic(self) -> None:
+        exit_code, out, err = self._search_format("hello", "json")
+        self.assertEqual(exit_code, 0)
+        self._assert_result_shape(json.loads(out), "semantic")
+
+    def test_json_output_shape_lexical(self) -> None:
+        exit_code, out, err = self._search_format("Foo", "json")
+        args = argparse.Namespace()
+        args.query = "Foo"
+        args.index = str(self.index_dir)
+        args.top_k = 5
+        args.max_chars = 200
+        args.mode = "lexical"
+        args.semantic_weight = 0.5
+        args.format = "json"
+        args.handler = cli.handle_search
+        buf_out = io.StringIO()
+        buf_err = io.StringIO()
+        old_out, old_err = sys.stdout, sys.stderr
+        sys.stdout = buf_out
+        sys.stderr = buf_err
+        try:
+            exit_code = cli.handle_search(args, embedder=None)
+        finally:
+            sys.stdout = old_out
+            sys.stderr = old_err
+        self.assertEqual(exit_code, 0)
+        self._assert_result_shape(json.loads(buf_out.getvalue()), "lexical")
+
+    def test_json_output_shape_hybrid(self) -> None:
+        exit_code, out, err = self._search_format("hello", "json")
+        # Hybrid path through _search with mode="hybrid"
+        args = argparse.Namespace()
+        args.query = "hello"
+        args.index = str(self.index_dir)
+        args.top_k = 5
+        args.max_chars = 200
+        args.mode = "hybrid"
+        args.semantic_weight = 0.5
+        args.format = "json"
+        args.handler = cli.handle_search
+        buf_out = io.StringIO()
+        buf_err = io.StringIO()
+        old_out, old_err = sys.stdout, sys.stderr
+        sys.stdout = buf_out
+        sys.stderr = buf_err
+        try:
+            exit_code = cli.handle_search(args, embedder=self.embedder)
+        finally:
+            sys.stdout = old_out
+            sys.stderr = old_err
+        self.assertEqual(exit_code, 0)
+        self._assert_result_shape(json.loads(buf_out.getvalue()), "hybrid")
+
+    def test_jsonl_output_shape_semantic(self) -> None:
+        exit_code, out, err = self._search_format("hello", "jsonl")
+        self.assertEqual(exit_code, 0)
+        lines = [json.loads(l) for l in out.strip().split("\n") if l]
+        for line in lines:
+            self._assert_result_shape([line], "semantic")
+
+    def test_jsonl_output_shape_hybrid(self) -> None:
+        args = argparse.Namespace()
+        args.query = "hello"
+        args.index = str(self.index_dir)
+        args.top_k = 5
+        args.max_chars = 200
+        args.mode = "hybrid"
+        args.semantic_weight = 0.5
+        args.format = "jsonl"
+        args.handler = cli.handle_search
+        buf_out = io.StringIO()
+        buf_err = io.StringIO()
+        old_out, old_err = sys.stdout, sys.stderr
+        sys.stdout = buf_out
+        sys.stderr = buf_err
+        try:
+            exit_code = cli.handle_search(args, embedder=self.embedder)
+        finally:
+            sys.stdout = old_out
+            sys.stderr = old_err
+        self.assertEqual(exit_code, 0)
+        lines = [json.loads(l) for l in buf_out.getvalue().strip().split("\n") if l]
+        for line in lines:
+            self._assert_result_shape([line], "hybrid")
 
 
 class CliBuildErrorTests(unittest.TestCase):
