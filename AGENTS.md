@@ -58,7 +58,7 @@ Not implemented yet:
 ## GitHub workflow and planning
 
 Current development stage: **alpha**.
-Current execution milestone: `v0.12.0-alpha.1: First alpha release`.
+Current execution milestone: `v0.12.0-beta.1: Beta hardening and distribution`.
 
 Use the simplest GitHub workflow for this project:
 
@@ -115,8 +115,9 @@ Milestone roadmap:
 | `v0.9.0-pre-alpha: Quality automation and docs correctness` | Complete: CI, test warning cleanup, docs fixes, pickle safety, and consistency validation. | #28, #29, #30, #31, #38 |
 | `v0.10.0-pre-alpha: Privacy, offline mode, and configuration` | Complete: relative paths, offline/cache docs, and minimal safe CLI config. | #32, #33, #34 |
 | `v0.11.0-pre-alpha: Retrieval quality evaluation and hybrid search` | Complete: lexical search, hybrid ranking, and deterministic retrieval fixtures. | #35, #36, #37 |
-| `v0.12.0-alpha-candidate: Executable package and alpha readiness` | Complete: regression fix, docs alignment, artifact validation, version/changelog, and alpha smoke flow. | #46, #47, #48, #49, #50 |
-| `v0.12.0-alpha.1: First alpha release` | Active: finalize docs, tag, and publish GitHub prerelease. | #54, #55, #56 |
+| `v0.12.0-alpha-candidate: Executable package and alpha readiness` | Complete: regression fix, docs/spec alignment, artifact validation, version/changelog, and alpha smoke flow. | #46, #47, #48, #49, #50, #52 |
+| `v0.12.0-alpha.1: First alpha release` | Complete: final release docs, tag, and GitHub prerelease. | #54, #55, #56 |
+| `v0.12.0-beta.1: Beta hardening and distribution` | Harden smoke tests, artifacts, CI/platforms, CLI/output contracts, dependencies, corpus validation, troubleshooting, and beta release. | #58, #59, #60, #61, #62, #63, #64, #65, #66 |
 
 Detailed roadmap lives in `docs/roadmap.md`.
 

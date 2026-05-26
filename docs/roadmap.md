@@ -2,7 +2,7 @@
 
 Current stage: **alpha** (v0.12.0a1).
 
-The project has a complete end-to-end local CLI: Markdown discovery, chunking, local embedding index persistence, semantic search, lexical search, hybrid ranking, JSON/JSONL output, CI, and safety checks for local index files.
+The project has a published first alpha release and a complete end-to-end local CLI: Markdown discovery, chunking, local embedding index persistence, semantic search, lexical search, hybrid ranking, JSON/JSONL output, CI, and safety checks for local index files.
 
 ## Completed phases
 
@@ -20,18 +20,55 @@ The project has a complete end-to-end local CLI: Markdown discovery, chunking, l
 | `v0.10.0-pre-alpha: Privacy, offline mode, and configuration` | Complete | Relative paths, offline/cache docs, `--max-chars`, and `--model` CLI options. |
 | `v0.11.0-pre-alpha: Retrieval quality evaluation and hybrid search` | Complete | Lexical search, hybrid ranking, and deterministic retrieval fixtures. |
 | `v0.12.0-alpha-candidate: Executable package and alpha readiness` | Complete | Regression fix, docs alignment, artifact validation, version/changelog, and alpha smoke flow. |
+| `v0.12.0-alpha.1: First alpha release` | Complete | Final release docs, tag `v0.12.0-alpha.1`, and GitHub prerelease publication. |
 
 ## Current phase
 
 ```text
-v0.12.0-alpha.1: First alpha release
+v0.12.0-beta.1: Beta hardening and distribution
 ```
 
-The alpha-candidate milestone is complete and `main` CI is green. The remaining release operations are:
+The alpha release is published. The beta phase should harden distribution, repeatability, platform coverage, output contracts, dependency policy, realistic corpus validation, and troubleshooting before publishing the first beta prerelease.
 
-1. #54 — Finalize alpha release docs and agent specs.
-2. #55 — Run preflight, create annotated tag `v0.12.0-alpha.1`.
-3. #56 — Publish GitHub prerelease with release notes.
+Recommended execution order:
+
+1. #58 — archive alpha release evidence and switch docs to beta phase.
+2. #59 — make the release smoke test reproducible for beta.
+3. #60 — build and validate wheel/sdist artifacts.
+4. #61 — expand CI and document supported platforms.
+5. #62 — document and test the beta CLI/output contract.
+6. #63 — define dependency version policy.
+7. #64 — add realistic synthetic corpus validation.
+8. #65 — add beta troubleshooting guide.
+9. #66 — prepare and publish `v0.12.0-beta.1`.
+
+## Open phase
+
+### v0.12.0-beta.1: Beta hardening and distribution
+
+Issues: #58, #59, #60, #61, #62, #63, #64, #65, #66
+
+Goal: make `semantic-index` beta-ready without changing the local-only, database-free architecture.
+
+Focus:
+
+- preserve alpha release evidence and align docs/specs for beta;
+- make the smoke test reproducible and safe for agents/humans;
+- validate wheel/sdist artifact installation outside the source tree;
+- expand CI or explicitly document platform support limits;
+- document CLI flags, exit codes, and JSON/JSONL output contract;
+- define dependency version policy for `fastembed`, `numpy`, and supported Python versions;
+- validate behavior with a larger synthetic Markdown corpus;
+- provide troubleshooting guidance for model cache, offline mode, permissions, corrupt indexes, and search modes;
+- prepare the `0.12.0b1` / `v0.12.0-beta.1` prerelease.
+
+Non-goals:
+
+- no PyPI publishing unless explicitly requested;
+- no API or web server;
+- no database;
+- no FAISS/ANN acceleration;
+- no Docker image or standalone binary unless separately scoped.
 
 ## Issue policy
 
