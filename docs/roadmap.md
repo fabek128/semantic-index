@@ -84,3 +84,8 @@ Every issue must be assigned to:
 - repository: `fabek128/semantic-index`;
 - project: `semantic-index Roadmap`;
 - one roadmap milestone.
+
+## RC readiness
+
+See [`docs/rc-criteria.md`](rc-criteria.md) for the RC readiness checklist
+and version target recommendations.
