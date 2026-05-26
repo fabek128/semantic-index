@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 for its `0.x` pre-alpha releases (see [Versioning policy](README.md#versioning-policy)).
 
+## [0.12.0b1] — 2026-05-26
+
+### Added
+
+- Release smoke test script (`scripts/release-smoke.sh`) for repeatable
+  end-to-end validation in a clean environment.
+- Synthetic Markdown corpus generator (`scripts/generate-corpus.py`)
+  with nested directories, Unicode, long sections, and code identifiers.
+- Dependency version policy (`docs/dependency-policy.md`) with tested
+  ranges for `fastembed>=0.5.0,<1.0.0` and `numpy>=1.26.0,<3.0.0`.
+- Output format contract (`docs/cli-contract.md`) — commands, flags,
+  defaults, exit codes, JSON/JSONL schemas per search mode.
+- Beta troubleshooting guide (`docs/troubleshooting.md`).
+- Platform support documentation (`docs/platforms.md`).
+- Artifact build and validation documentation (`docs/artifact-build.md`).
+- Alpha smoke-test evidence archived at
+  `docs/releases/0.12.0a1/release-smoke-test.md`.
+- Golden tests for JSON/JSONL output shape in all three search modes.
+
+### Changed
+
+- Package version bumped to `0.12.0b1` (first beta prerelease).
+- CI expanded: added `macos-latest` runner (Python 3.13).
+- Dependency bounds added: `fastembed<1.0.0`, `numpy<3.0.0`.
+- Documentation status updated from alpha to beta phase.
+
 ## [0.12.0a1] — 2026-05-25
 
 ### Added
