@@ -193,7 +193,7 @@ class CliBuildTests(unittest.TestCase):
     def test_build_empty_directory(self) -> None:
         exit_code, out, err = self._run(str(self.root))
 
-        self.assertEqual(exit_code, 0)
+        self.assertEqual(exit_code, 1)
         self.assertIn("No Markdown files found", out)
 
     def test_build_default_out_default_dir(self) -> None:

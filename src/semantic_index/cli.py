@@ -44,7 +44,10 @@ def build_parser() -> argparse.ArgumentParser:
         description=(
             "Discover Markdown files from a local input path, split them "
             "into chunks, generate local embeddings, and persist the index "
-            "as docs.jsonl + index.npz."
+            "as docs.jsonl + index.npz.\n\n"
+            "The first build downloads the default embedding model (~470 MB) "
+            "from Hugging Face and caches it in ~/.cache/fastembed/. "
+            "Subsequent builds use the cached model."
         ),
     )
     build_parser_inst.add_argument(
@@ -76,7 +79,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="search an existing index",
         description=(
             "Load a built index and return the top-k most relevant "
-            "chunks for a free-text query."
+            "chunks for a free-text query.\n\n"
+            "Search modes:\n"
+            "  semantic  — cosine similarity with stored embeddings (default).\n"
+            "  lexical   — exact term-frequency matching, no model required.\n"
+            "  hybrid    — weighted combination of semantic and lexical scores."
         ),
     )
     search_parser.add_argument(
@@ -155,7 +162,8 @@ def handle_build(args: argparse.Namespace, embedder=None) -> int:
 
     if not files:
         print(f"No Markdown files found in: {input_path}")
-        return 0
+        print("Check that the path contains .md files and is readable.", file=sys.stderr)
+        return 1
 
     # Chunk all files
     all_chunks: list[dict] = []
