@@ -208,9 +208,12 @@ def handle_build(args: argparse.Namespace, embedder=None) -> int:
 
     # Check for existing index
     existing_files = []
-    for name in ("manifest.json", "docs.jsonl", "index.npz"):
-        if (output_dir / name).exists():
-            existing_files.append(name)
+    try:
+        for name in ("manifest.json", "docs.jsonl", "index.npz"):
+            if (output_dir / name).exists():
+                existing_files.append(name)
+    except PermissionError:
+        existing_files = []
 
     # Build and persist the index
     try:
