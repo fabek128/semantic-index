@@ -108,7 +108,7 @@ def _section(
     return "\n".join(lines)
 
 
-def generate_corpus(out_dir: Path, seed: int = 42) -> None:
+def generate_corpus(out_dir: Path, seed: int = 42, scale: int = 1) -> None:
     rng = random.Random(seed)
 
     for dir_path, file_count in DIR_STRUCTURE:
@@ -125,7 +125,8 @@ def generate_corpus(out_dir: Path, seed: int = 42) -> None:
         if dir_path.startswith("dev"):
             base_words = base_words + CODE_IDENTIFIERS
 
-        for i in range(file_count):
+        for i in range(file_count * scale):
+            prefix = f"{scale}-" if scale > 1 else ""
             title = f"Document {i + 1} — {dir_path.replace('/', ' ').title()}"
             doc_lines = [f"# {title}", ""]
 
@@ -158,7 +159,7 @@ def generate_corpus(out_dir: Path, seed: int = 42) -> None:
             doc_lines.append(f"Tags: {', '.join(tags)}")
             doc_lines.append("")
 
-            file_path = full_dir / f"doc-{i + 1}.md"
+            file_path = full_dir / f"doc-{prefix}-{i + 1}.md"
             file_path.write_text("\n".join(doc_lines), encoding="utf-8")
 
     # One extra file with only Unicode content to test encoding
@@ -180,6 +181,7 @@ def main() -> None:
     )
     parser.add_argument("--out", default="/tmp/si-corpus", help="Output dir")
     parser.add_argument("--seed", type=int, default=42, help="RNG seed")
+    parser.add_argument("--scale", type=int, default=1, help="Scale factor (multiply files per dir)")
     args = parser.parse_args()
 
     out_dir = Path(args.out)
@@ -188,7 +190,7 @@ def main() -> None:
         shutil.rmtree(out_dir)
 
     t0 = time.time()
-    generate_corpus(out_dir, seed=args.seed)
+    generate_corpus(out_dir, seed=args.seed, scale=args.scale)
     elapsed = time.time() - t0
 
     md_files = list(out_dir.rglob("*.md"))

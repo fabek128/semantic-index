@@ -26,6 +26,9 @@ python3 scripts/generate-corpus.py --out /tmp/my-corpus
 
 # Different random seed
 python3 scripts/generate-corpus.py --seed 99
+
+# Generate a larger corpus (scale multiplies files per directory)
+python3 scripts/generate-corpus.py --scale 5 --out /tmp/si-medium
 ```
 
 ## Expected characteristics
@@ -96,3 +99,58 @@ semantic-index search "command line tools" --index /tmp/si-index --mode hybrid -
   always produces the same files.
 - The corpus is written to `/tmp` and is not committed to Git.
 - First build triggers a model download (~470 MB) to `~/.cache/fastembed/`.
+
+## Scale and performance baseline
+
+The following measurements were taken with the default model and macOS
+(ARM64, Python 3.14). Model was pre-cached.
+
+### Corpus sizes
+
+| Label | `--scale` | Files | Chunks | Index size | Build time |
+| --- | --- | --- | --- | --- | --- |
+| Small | 1 (default) | 22 | 284 | ~820 KB | ~15 s |
+| Medium | 5 | 106 | 819 | ~2.2 MB | ~20 s |
+
+### Search time
+
+Semantic search (`--mode semantic`, `--top-k 5`):
+
+| Corpus | Time |
+| --- | --- |
+| Small | ~1.3 s |
+| Medium | ~1.1 s |
+
+Lexical search (`--mode lexical`, `--top-k 5`):
+
+| Corpus | Time |
+| --- | --- |
+| Small | ~0.1 s |
+| Medium | ~0.1 s |
+
+### Memory
+
+- Embedding model loading accounts for ~1.3 GB resident memory.
+- Index data (`numpy` array of 384-dim float32 vectors) adds ~0.5 MB
+  per 1,000 chunks.
+- Search does not allocate significant additional memory.
+
+### Recommended operating range
+
+| Dimension | Recommended limit |
+| --- | --- |
+| Files | Up to ~1,000 |
+| Chunks | Up to ~10,000 |
+| Index size | Up to ~50 MB |
+
+Above these limits, the in-memory exact cosine search may become slow
+(seconds to tens of seconds). Future ANN/FAISS support would extend
+this range.
+
+### Notes
+
+- Search time is dominated by embedding the query (semantic/hybrid modes),
+  not by the cosine comparison. Lexical search is always fast because it
+  skips embedding entirely.
+- Build time scales roughly linearly with chunk count.
+- exact values vary by hardware, model, and Python version.
